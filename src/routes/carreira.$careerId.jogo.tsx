@@ -329,6 +329,25 @@ function JogoPage() {
       }
     }
 
+    // Registra o resultado informado (inalterado) e simula os outros jogos da rodada.
+    let finalPosition = position;
+    try {
+      const { position: computed } = await resolveMatchday({
+        careerId: career.id,
+        userId: career.user_id,
+        season: career.season,
+        matchday: career.matchday,
+        userClubName: club.name,
+        opponent: opponent.trim(),
+        home,
+        goalsFor: gf,
+        goalsAgainst: ga,
+      });
+      if (computed) finalPosition = computed;
+    } catch {
+      // Se o calendário ainda não existir, mantém a posição informada.
+    }
+
     const { error: matchErr } = await supabase.from("matches").insert({
       career_id: career.id,
       user_id: career.user_id,
@@ -339,7 +358,7 @@ function JogoPage() {
       goals_against: ga,
       scorers: scorersStr || null,
       assists: assistsStr || null,
-      league_position_after: position,
+      league_position_after: finalPosition,
       result: realResult,
     });
     if (matchErr) { toast.error(matchErr.message); setBusy(false); return; }
