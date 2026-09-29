@@ -15,6 +15,7 @@ import {
   postMatchPressIntro,
 } from "@/lib/narrative";
 import { isWindowOpen, isDerby, derbyName } from "@/lib/season";
+import { resolveMatchday } from "@/lib/fixtures";
 import { loadLineup, clearLineup, type SavedLineup } from "@/lib/lineup";
 import { POSITION_ORDER, normalizePosition } from "@/data/squads";
 import { toast } from "sonner";
@@ -408,7 +409,18 @@ function JogoPage() {
       }
     }
 
-    const nextOpp = club.rivals[(career.matchday) % club.rivals.length] ?? "Adversário";
+    let nextOpp = club.rivals[(career.matchday) % club.rivals.length] ?? "Adversário";
+    const { data: nextFixture } = await supabase
+      .from("fixtures")
+      .select("home_club, away_club")
+      .eq("career_id", career.id)
+      .eq("season", career.season)
+      .eq("matchday", nextMatchday)
+      .eq("is_user_match", true)
+      .maybeSingle();
+    if (nextFixture) {
+      nextOpp = nextFixture.home_club === club.name ? nextFixture.away_club : nextFixture.home_club;
+    }
 
     // Retorno automático de jogadores emprestados cuja janela expirou.
     const { data: returningLoans } = await supabase
