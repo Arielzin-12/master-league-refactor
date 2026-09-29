@@ -1,1 +1,0 @@
-ALTER TABLE public.market_players ADD COLUMN IF NOT EXISTS current_club text NOT NULL DEFAULT 'Livre';
