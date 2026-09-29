@@ -483,6 +483,7 @@ function JogoPage() {
     const { error: cErr } = await supabase.from("careers").update({
       ...boardNext,
       total_matches: (cx.total_matches ?? 0) + 1,
+      transfer_budget_eur: ((cx as { transfer_budget_eur?: number }).transfer_budget_eur ?? 0) + bonus + (home ? 1_200_000 : 0),
       matchday: nextMatchday,
       points: career.points + pointsDelta,
       played: career.played + 1,
