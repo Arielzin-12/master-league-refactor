@@ -224,12 +224,19 @@ export async function recomputeStandings(params: { careerId: string; userId: str
     else { h.draws++; a.draws++; h.points++; a.points++; }
   }
 
-  for (const [club, s] of acc.entries()) {
-    await supabase
+  const rows = Array.from(acc.entries()).map(([club, s]) => ({
+    career_id: careerId,
+    user_id: params.userId,
+    season,
+    club_name: club,
+    club_slug: slugifyClub(club),
+    ...s,
+  }));
+
+  if (rows.length > 0) {
+    const { error } = await supabase
       .from("standings")
-      .update(s)
-      .eq("career_id", careerId)
-      .eq("season", season)
-      .eq("club_name", club);
+      .upsert(rows, { onConflict: "career_id,season,club_name" });
+    if (error) throw error;
   }
 }
