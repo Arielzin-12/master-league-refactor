@@ -8,6 +8,13 @@
       "when": 1790642326246,
       "tag": "0000_masterleague_base_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790642395229,
+      "tag": "0001_masterleague_expansion",
+      "breakpoints": true
     }
   ]
 }

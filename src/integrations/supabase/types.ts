@@ -16,11 +16,14 @@ export type Database = {
     Tables: {
       careers: {
         Row: {
+          board_confidence: number
+          board_objective: string
           cash_eur: number
           club_name: string
           club_slug: string
           created_at: string
           draws: number
+          fan_mood: number
           goals_against: number
           goals_for: number
           id: string
@@ -32,20 +35,29 @@ export type Database = {
           next_opponent: string | null
           played: number
           points: number
+          reputation: number
           season: number
+          squad_morale: number
+          titles: number
+          total_matches: number
+          transfer_budget_eur: number
           transfer_window_closes_at: number
           transfer_window_open: boolean
           updated_at: string
           user_id: string
+          wage_budget_eur: number
           weekly_wages_eur: number
           wins: number
         }
         Insert: {
+          board_confidence?: number
+          board_objective?: string
           cash_eur?: number
           club_name: string
           club_slug: string
           created_at?: string
           draws?: number
+          fan_mood?: number
           goals_against?: number
           goals_for?: number
           id?: string
@@ -57,20 +69,29 @@ export type Database = {
           next_opponent?: string | null
           played?: number
           points?: number
+          reputation?: number
           season?: number
+          squad_morale?: number
+          titles?: number
+          total_matches?: number
+          transfer_budget_eur?: number
           transfer_window_closes_at?: number
           transfer_window_open?: boolean
           updated_at?: string
           user_id: string
+          wage_budget_eur?: number
           weekly_wages_eur?: number
           wins?: number
         }
         Update: {
+          board_confidence?: number
+          board_objective?: string
           cash_eur?: number
           club_name?: string
           club_slug?: string
           created_at?: string
           draws?: number
+          fan_mood?: number
           goals_against?: number
           goals_for?: number
           id?: string
@@ -82,15 +103,124 @@ export type Database = {
           next_opponent?: string | null
           played?: number
           points?: number
+          reputation?: number
           season?: number
+          squad_morale?: number
+          titles?: number
+          total_matches?: number
+          transfer_budget_eur?: number
           transfer_window_closes_at?: number
           transfer_window_open?: boolean
           updated_at?: string
           user_id?: string
+          wage_budget_eur?: number
           weekly_wages_eur?: number
           wins?: number
         }
         Relationships: []
+      }
+      financial_transactions: {
+        Row: {
+          amount_eur: number
+          budget: string
+          career_id: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          matchday: number
+          season: number
+          user_id: string
+        }
+        Insert: {
+          amount_eur: number
+          budget?: string
+          career_id: string
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          matchday?: number
+          season?: number
+          user_id: string
+        }
+        Update: {
+          amount_eur?: number
+          budget?: string
+          career_id?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          matchday?: number
+          season?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixtures: {
+        Row: {
+          away_club: string
+          away_goals: number | null
+          career_id: string
+          competition: string
+          created_at: string
+          home_club: string
+          home_goals: number | null
+          id: string
+          is_user_match: boolean
+          matchday: number
+          played: boolean
+          season: number
+          user_id: string
+        }
+        Insert: {
+          away_club: string
+          away_goals?: number | null
+          career_id: string
+          competition?: string
+          created_at?: string
+          home_club: string
+          home_goals?: number | null
+          id?: string
+          is_user_match?: boolean
+          matchday: number
+          played?: boolean
+          season?: number
+          user_id: string
+        }
+        Update: {
+          away_club?: string
+          away_goals?: number | null
+          career_id?: string
+          competition?: string
+          created_at?: string
+          home_club?: string
+          home_goals?: number | null
+          id?: string
+          is_user_match?: boolean
+          matchday?: number
+          played?: boolean
+          season?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixtures_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       incoming_offers: {
         Row: {
@@ -151,20 +281,139 @@ export type Database = {
           },
         ]
       }
+      injuries: {
+        Row: {
+          career_id: string
+          created_at: string
+          id: string
+          injury_type: string
+          player_id: string
+          player_name: string
+          recovered: boolean
+          returns_matchday: number
+          severity: string
+          started_matchday: number
+          user_id: string
+        }
+        Insert: {
+          career_id: string
+          created_at?: string
+          id?: string
+          injury_type: string
+          player_id: string
+          player_name: string
+          recovered?: boolean
+          returns_matchday: number
+          severity?: string
+          started_matchday: number
+          user_id: string
+        }
+        Update: {
+          career_id?: string
+          created_at?: string
+          id?: string
+          injury_type?: string
+          player_id?: string
+          player_name?: string
+          recovered?: boolean
+          returns_matchday?: number
+          severity?: string
+          started_matchday?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "injuries_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "injuries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "squad_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lineups: {
+        Row: {
+          bench: Json
+          captain_id: string | null
+          career_id: string
+          created_at: string
+          formation: string
+          id: string
+          match_id: string | null
+          matchday: number
+          set_pieces: Json
+          starters: Json
+          user_id: string
+        }
+        Insert: {
+          bench?: Json
+          captain_id?: string | null
+          career_id: string
+          created_at?: string
+          formation?: string
+          id?: string
+          match_id?: string | null
+          matchday: number
+          set_pieces?: Json
+          starters?: Json
+          user_id: string
+        }
+        Update: {
+          bench?: Json
+          captain_id?: string | null
+          career_id?: string
+          created_at?: string
+          formation?: string
+          id?: string
+          match_id?: string | null
+          matchday?: number
+          set_pieces?: Json
+          starters?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lineups_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineups_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_players: {
         Row: {
           age: number
           career_id: string
           created_at: string
           current_club: string
+          efootball_player_value: number | null
           expected_wage_eur: number
+          foot: string
           id: string
+          league: string | null
           market_value_eur: number
           name: string
+          nationality: string | null
           overall: number
           position: string
           potential: number
           region: string
+          traits: string | null
           user_id: string
         }
         Insert: {
@@ -172,14 +421,19 @@ export type Database = {
           career_id: string
           created_at?: string
           current_club?: string
+          efootball_player_value?: number | null
           expected_wage_eur?: number
+          foot?: string
           id?: string
+          league?: string | null
           market_value_eur: number
           name: string
+          nationality?: string | null
           overall?: number
           position?: string
           potential?: number
           region?: string
+          traits?: string | null
           user_id: string
         }
         Update: {
@@ -187,14 +441,19 @@ export type Database = {
           career_id?: string
           created_at?: string
           current_club?: string
+          efootball_player_value?: number | null
           expected_wage_eur?: number
+          foot?: string
           id?: string
+          league?: string | null
           market_value_eur?: number
           name?: string
+          nationality?: string | null
           overall?: number
           position?: string
           potential?: number
           region?: string
+          traits?: string | null
           user_id?: string
         }
         Relationships: [
@@ -207,17 +466,81 @@ export type Database = {
           },
         ]
       }
+      match_events: {
+        Row: {
+          assist_player_id: string | null
+          assist_player_name: string | null
+          career_id: string
+          created_at: string
+          detail: string | null
+          event_type: string
+          id: string
+          match_id: string
+          minute: number | null
+          player_id: string | null
+          player_name: string | null
+          user_id: string
+        }
+        Insert: {
+          assist_player_id?: string | null
+          assist_player_name?: string | null
+          career_id: string
+          created_at?: string
+          detail?: string | null
+          event_type: string
+          id?: string
+          match_id: string
+          minute?: number | null
+          player_id?: string | null
+          player_name?: string | null
+          user_id: string
+        }
+        Update: {
+          assist_player_id?: string | null
+          assist_player_name?: string | null
+          career_id?: string
+          created_at?: string
+          detail?: string | null
+          event_type?: string
+          id?: string
+          match_id?: string
+          minute?: number | null
+          player_id?: string | null
+          player_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_events_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           assists: string | null
           career_id: string
+          competition: string
           created_at: string
           goals_against: number
           goals_for: number
           home: boolean
           id: string
           league_position_after: number | null
+          locked: boolean
           matchday: number
+          motm_player_id: string | null
+          notes: string | null
           opponent: string
           result: string
           scorers: string | null
@@ -226,13 +549,17 @@ export type Database = {
         Insert: {
           assists?: string | null
           career_id: string
+          competition?: string
           created_at?: string
           goals_against?: number
           goals_for?: number
           home?: boolean
           id?: string
           league_position_after?: number | null
+          locked?: boolean
           matchday: number
+          motm_player_id?: string | null
+          notes?: string | null
           opponent: string
           result?: string
           scorers?: string | null
@@ -241,13 +568,17 @@ export type Database = {
         Update: {
           assists?: string | null
           career_id?: string
+          competition?: string
           created_at?: string
           goals_against?: number
           goals_for?: number
           home?: boolean
           id?: string
           league_position_after?: number | null
+          locked?: boolean
           matchday?: number
+          motm_player_id?: string | null
+          notes?: string | null
           opponent?: string
           result?: string
           scorers?: string | null
@@ -304,31 +635,250 @@ export type Database = {
           },
         ]
       }
+      press_conferences: {
+        Row: {
+          answer: string | null
+          board_delta: number
+          career_id: string
+          context: string | null
+          created_at: string
+          fan_delta: number
+          id: string
+          matchday: number
+          question: string
+          reaction: string | null
+          squad_delta: number
+          user_id: string
+        }
+        Insert: {
+          answer?: string | null
+          board_delta?: number
+          career_id: string
+          context?: string | null
+          created_at?: string
+          fan_delta?: number
+          id?: string
+          matchday?: number
+          question: string
+          reaction?: string | null
+          squad_delta?: number
+          user_id: string
+        }
+        Update: {
+          answer?: string | null
+          board_delta?: number
+          career_id?: string
+          context?: string | null
+          created_at?: string
+          fan_delta?: number
+          id?: string
+          matchday?: number
+          question?: string
+          reaction?: string | null
+          squad_delta?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "press_conferences_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scouting: {
+        Row: {
+          career_id: string
+          created_at: string
+          id: string
+          market_player_id: string | null
+          notes: string | null
+          player_name: string
+          user_id: string
+        }
+        Insert: {
+          career_id: string
+          created_at?: string
+          id?: string
+          market_player_id?: string | null
+          notes?: string | null
+          player_name: string
+          user_id: string
+        }
+        Update: {
+          career_id?: string
+          created_at?: string
+          id?: string
+          market_player_id?: string | null
+          notes?: string | null
+          player_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scouting_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scouting_market_player_id_fkey"
+            columns: ["market_player_id"]
+            isOneToOne: false
+            referencedRelation: "market_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_comments: {
+        Row: {
+          author_handle: string
+          author_name: string
+          author_type: string
+          body: string
+          career_id: string
+          created_at: string
+          id: string
+          likes: number
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          author_handle: string
+          author_name: string
+          author_type?: string
+          body: string
+          career_id: string
+          created_at?: string
+          id?: string
+          likes?: number
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          author_handle?: string
+          author_name?: string
+          author_type?: string
+          body?: string
+          career_id?: string
+          created_at?: string
+          id?: string
+          likes?: number
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_comments_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_posts: {
+        Row: {
+          author_handle: string
+          author_name: string
+          author_type: string
+          body: string
+          career_id: string
+          context: string | null
+          created_at: string
+          id: string
+          likes: number
+          matchday: number
+          user_id: string
+        }
+        Insert: {
+          author_handle: string
+          author_name: string
+          author_type?: string
+          body: string
+          career_id: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          likes?: number
+          matchday?: number
+          user_id: string
+        }
+        Update: {
+          author_handle?: string
+          author_name?: string
+          author_type?: string
+          body?: string
+          career_id?: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          likes?: number
+          matchday?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       squad_players: {
         Row: {
           age: number
+          appearances: number
           assists: number
           attack: number
           career_id: string
+          clean_sheets: number
           club_slug: string
+          contract_until_season: number
           created_at: string
           defense: number
+          efootball_player_value: number | null
           face_url: string | null
+          foot: string
           goals: number
           id: string
           injured: boolean
+          injury_returns_at_matchday: number | null
+          injury_severity: string | null
+          injury_type: string | null
           is_captain: boolean
           loan_returns_at_matchday: number | null
           loan_to_club: string | null
           market_value_eur: number
+          minutes: number
           morale: number
+          motm: number
           name: string
+          nationality: string | null
           on_loan: boolean
           original_wage_eur: number
           overall: number
           physical: number
           position: string
           potential: number
+          rating_sum: number
+          red_cards_season: number
+          secondary_positions: string | null
+          signing_bonus_eur: number
+          squad_role: string
+          suspended_matches: number
           technique: number
           user_id: string
           weekly_wage_eur: number
@@ -336,28 +886,45 @@ export type Database = {
         }
         Insert: {
           age?: number
+          appearances?: number
           assists?: number
           attack?: number
           career_id: string
+          clean_sheets?: number
           club_slug: string
+          contract_until_season?: number
           created_at?: string
           defense?: number
+          efootball_player_value?: number | null
           face_url?: string | null
+          foot?: string
           goals?: number
           id?: string
           injured?: boolean
+          injury_returns_at_matchday?: number | null
+          injury_severity?: string | null
+          injury_type?: string | null
           is_captain?: boolean
           loan_returns_at_matchday?: number | null
           loan_to_club?: string | null
           market_value_eur?: number
+          minutes?: number
           morale?: number
+          motm?: number
           name: string
+          nationality?: string | null
           on_loan?: boolean
           original_wage_eur?: number
           overall?: number
           physical?: number
           position?: string
           potential?: number
+          rating_sum?: number
+          red_cards_season?: number
+          secondary_positions?: string | null
+          signing_bonus_eur?: number
+          squad_role?: string
+          suspended_matches?: number
           technique?: number
           user_id: string
           weekly_wage_eur?: number
@@ -365,28 +932,45 @@ export type Database = {
         }
         Update: {
           age?: number
+          appearances?: number
           assists?: number
           attack?: number
           career_id?: string
+          clean_sheets?: number
           club_slug?: string
+          contract_until_season?: number
           created_at?: string
           defense?: number
+          efootball_player_value?: number | null
           face_url?: string | null
+          foot?: string
           goals?: number
           id?: string
           injured?: boolean
+          injury_returns_at_matchday?: number | null
+          injury_severity?: string | null
+          injury_type?: string | null
           is_captain?: boolean
           loan_returns_at_matchday?: number | null
           loan_to_club?: string | null
           market_value_eur?: number
+          minutes?: number
           morale?: number
+          motm?: number
           name?: string
+          nationality?: string | null
           on_loan?: boolean
           original_wage_eur?: number
           overall?: number
           physical?: number
           position?: string
           potential?: number
+          rating_sum?: number
+          red_cards_season?: number
+          secondary_positions?: string | null
+          signing_bonus_eur?: number
+          squad_role?: string
+          suspended_matches?: number
           technique?: number
           user_id?: string
           weekly_wage_eur?: number
@@ -398,6 +982,119 @@ export type Database = {
             columns: ["career_id"]
             isOneToOne: false
             referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      standings: {
+        Row: {
+          career_id: string
+          club_name: string
+          club_slug: string
+          draws: number
+          goals_against: number
+          goals_for: number
+          id: string
+          losses: number
+          played: number
+          points: number
+          season: number
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          career_id: string
+          club_name: string
+          club_slug: string
+          draws?: number
+          goals_against?: number
+          goals_for?: number
+          id?: string
+          losses?: number
+          played?: number
+          points?: number
+          season?: number
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          career_id?: string
+          club_name?: string
+          club_slug?: string
+          draws?: number
+          goals_against?: number
+          goals_for?: number
+          id?: string
+          losses?: number
+          played?: number
+          points?: number
+          season?: number
+          user_id?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "standings_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suspensions: {
+        Row: {
+          active: boolean
+          career_id: string
+          created_at: string
+          id: string
+          matches_served: number
+          matches_total: number
+          player_id: string
+          player_name: string
+          reason: string
+          started_matchday: number
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          career_id: string
+          created_at?: string
+          id?: string
+          matches_served?: number
+          matches_total?: number
+          player_id: string
+          player_name: string
+          reason?: string
+          started_matchday: number
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          career_id?: string
+          created_at?: string
+          id?: string
+          matches_served?: number
+          matches_total?: number
+          player_id?: string
+          player_name?: string
+          reason?: string
+          started_matchday?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suspensions_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "squad_players"
             referencedColumns: ["id"]
           },
         ]
