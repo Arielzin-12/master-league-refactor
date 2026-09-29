@@ -35,6 +35,31 @@ export async function createCareer(input: NewCareerInput) {
 
   if (careerErr || !career) throw careerErr ?? new Error("Falha ao criar carreira");
 
+  // Calendário completo (38 rodadas) + tabela zerada do Brasileirão
+  await generateSeason({
+    careerId: career.id,
+    userId: input.userId,
+    season: career.season,
+    userClubName: club.name,
+  });
+
+  const { data: firstFixture } = await supabase
+    .from("fixtures")
+    .select("home_club, away_club")
+    .eq("career_id", career.id)
+    .eq("season", career.season)
+    .eq("matchday", 1)
+    .eq("is_user_match", true)
+    .maybeSingle();
+
+  if (firstFixture) {
+    const opp = firstFixture.home_club === club.name ? firstFixture.away_club : firstFixture.home_club;
+    await supabase.from("careers").update({ next_opponent: opp }).eq("id", career.id);
+    career.next_opponent = opp;
+  }
+
+
+
   // Inserir todos os elencos dos 6 clubes
   const allSquadRows: Array<{
     career_id: string;
