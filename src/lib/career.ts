@@ -4,6 +4,7 @@ import { SQUADS, MARKET_SEED } from "@/data/squads";
 import { generatePlayerStats } from "@/lib/players";
 import { isWindowOpen, windowClosesAt } from "@/lib/season";
 import { pushAINews } from "@/lib/news";
+import { generateSeason } from "@/lib/fixtures";
 
 export interface NewCareerInput {
   managerName: string;
