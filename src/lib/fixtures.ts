@@ -149,20 +149,24 @@ export async function resolveMatchday(params: {
 
   if (!fixtures || fixtures.length === 0) return { position: null };
 
-  for (const f of fixtures) {
-    if (f.played) continue;
-    let hg: number;
-    let ag: number;
-    if (f.is_user_match) {
-      // Resultado informado pelo usuário — preservado exatamente.
-      const userIsHome = f.home_club === userClubName;
-      hg = userIsHome ? params.goalsFor : params.goalsAgainst;
-      ag = userIsHome ? params.goalsAgainst : params.goalsFor;
-    } else {
-      [hg, ag] = simulateScore(f.home_club, f.away_club);
-    }
-    await supabase.from("fixtures").update({ home_goals: hg, away_goals: ag, played: true }).eq("id", f.id);
-  }
+  await Promise.all(
+    fixtures
+      .filter((f) => !f.played)
+      .map((f) => {
+        let hg: number;
+        let ag: number;
+        if (f.is_user_match) {
+          // Resultado informado pelo usuário — preservado exatamente.
+          const userIsHome = f.home_club === userClubName;
+          hg = userIsHome ? params.goalsFor : params.goalsAgainst;
+          ag = userIsHome ? params.goalsAgainst : params.goalsFor;
+        } else {
+          [hg, ag] = simulateScore(f.home_club, f.away_club);
+        }
+        return supabase.from("fixtures").update({ home_goals: hg, away_goals: ag, played: true }).eq("id", f.id);
+      }),
+  );
+
 
   await recomputeStandings({ careerId, userId, season });
 
