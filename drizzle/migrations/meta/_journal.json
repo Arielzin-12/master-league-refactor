@@ -15,6 +15,13 @@
       "when": 1790642395229,
       "tag": "0001_masterleague_expansion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790642912659,
+      "tag": "0002_standings_unique_index",
+      "breakpoints": true
     }
   ]
 }
