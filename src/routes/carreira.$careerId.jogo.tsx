@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
+import { applyPostMatch } from "@/lib/postmatch";
 import { useEffect, useMemo, useState } from "react";
 import { useCareer } from "@/lib/career-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,6 +96,8 @@ function JogoPage() {
   const [activeStat, setActiveStat] = useState<StatKey>("goals");
   const [position, setPosition] = useState(career.league_position);
   const [busy, setBusy] = useState(false);
+  const [motmId, setMotmId] = useState("");
+  const [notes, setNotes] = useState("");
 
   // Coletiva pós-jogo
   const [pressOpen, setPressOpen] = useState(false);
@@ -361,6 +364,9 @@ function JogoPage() {
       assists: assistsStr || null,
       league_position_after: finalPosition,
       result: realResult,
+      competition: "Brasileirão",
+      motm_player_id: motmId || null,
+      notes: notes.trim() || null,
     });
     if (matchErr) { toast.error(matchErr.message); setBusy(false); return; }
 
@@ -453,7 +459,32 @@ function JogoPage() {
       }
     }
 
+    const cx = career as typeof career & { board_confidence?: number; fan_mood?: number; squad_morale?: number; reputation?: number; total_matches?: number };
+    let boardNext = {};
+    try {
+      boardNext = await applyPostMatch({
+        careerId: career.id, userId: career.user_id, season: career.season,
+        matchday: career.matchday, nextMatchday, clubName: club.name,
+        opponent: opponent.trim(), home, gf, ga, result: realResult, bonus,
+        weeklyWages: career.weekly_wages_eur,
+        players: players.map((p) => ({ id: p.id, name: p.name, position: p.position })),
+        starters: lineup?.starters ?? [],
+        subsIn: liveSubs.map((s) => ({ id: s.inId, minute: s.minute })),
+        subsOut: liveSubs.map((s) => ({ id: s.outId, minute: s.minute })),
+        goals, assists, yellow, red, motmId: motmId || null,
+        board: {
+          board_confidence: cx.board_confidence ?? 60, fan_mood: cx.fan_mood ?? 60,
+          squad_morale: cx.squad_morale ?? 70, reputation: cx.reputation ?? 50,
+        },
+      });
+    } catch (e) {
+      console.error("post-match", e);
+    }
+
     const { error: cErr } = await supabase.from("careers").update({
+      ...boardNext,
+      total_matches: (cx.total_matches ?? 0) + 1,
+      transfer_budget_eur: ((cx as { transfer_budget_eur?: number }).transfer_budget_eur ?? 0) + bonus + (home ? 1_200_000 : 0),
       matchday: nextMatchday,
       points: career.points + pointsDelta,
       played: career.played + 1,
@@ -462,7 +493,7 @@ function JogoPage() {
       losses: career.losses + (realResult === "D" ? 1 : 0),
       goals_for: career.goals_for + gf,
       goals_against: career.goals_against + ga,
-      league_position: position,
+      league_position: finalPosition,
       next_opponent: nextOpp,
       cash_eur: career.cash_eur - career.weekly_wages_eur + bonus,
       transfer_window_open: windowStillOpen,
@@ -1070,6 +1101,20 @@ function JogoPage() {
             <p className="text-[10px] text-muted-foreground">
               Quem entrar fica disponível para registrar gols, assistências e cartões.
             </p>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="space-y-1 text-sm">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">Melhor em campo</span>
+              <select value={motmId} onChange={(e) => setMotmId(e.target.value)} className="h-9 w-full rounded-md border border-border bg-background px-2">
+                <option value="">— Sem escolha —</option>
+                {lineupPlayers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">Observações</span>
+              <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: gol no fim, pênalti perdido..." className="h-9 w-full rounded-md border border-border bg-background px-2" />
+            </label>
           </div>
 
           <Button onClick={submit} disabled={busy} size="lg" className="w-full">
