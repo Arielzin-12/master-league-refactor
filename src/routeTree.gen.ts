@@ -16,13 +16,18 @@ import { Route as CarreiraCareerIdRouteImport } from './routes/carreira.$careerI
 import { Route as CarreirasNovaRouteImport } from './routes/carreiras.nova'
 import { Route as CarreiraCareerIdIndexRouteImport } from './routes/carreira.$careerId.index'
 import { Route as CarreiraCareerIdClimaRouteImport } from './routes/carreira.$careerId.clima'
+import { Route as CarreiraCareerIdDiretoriaRouteImport } from './routes/carreira.$careerId.diretoria'
 import { Route as CarreiraCareerIdElencoRouteImport } from './routes/carreira.$careerId.elenco'
 import { Route as CarreiraCareerIdEscalacaoRouteImport } from './routes/carreira.$careerId.escalacao'
+import { Route as CarreiraCareerIdEstatisticasRouteImport } from './routes/carreira.$careerId.estatisticas'
+import { Route as CarreiraCareerIdFinancasRouteImport } from './routes/carreira.$careerId.financas'
 import { Route as CarreiraCareerIdJogoRouteImport } from './routes/carreira.$careerId.jogo'
+import { Route as CarreiraCareerIdMedicoRouteImport } from './routes/carreira.$careerId.medico'
 import { Route as CarreiraCareerIdMercadoRouteImport } from './routes/carreira.$careerId.mercado'
 import { Route as CarreiraCareerIdNoticiasRouteImport } from './routes/carreira.$careerId.noticias'
 import { Route as CarreiraCareerIdPreparacaoRouteImport } from './routes/carreira.$careerId.preparacao'
 import { Route as CarreiraCareerIdPropostasRouteImport } from './routes/carreira.$careerId.propostas'
+import { Route as CarreiraCareerIdSocialRouteImport } from './routes/carreira.$careerId.social'
 import { Route as CarreiraCareerIdTabelaRouteImport } from './routes/carreira.$careerId.tabela'
 
 const IndexRoute = IndexRouteImport.update({
@@ -60,6 +65,12 @@ const CarreiraCareerIdClimaRoute = CarreiraCareerIdClimaRouteImport.update({
   path: '/clima',
   getParentRoute: () => CarreiraCareerIdRoute,
 } as any)
+const CarreiraCareerIdDiretoriaRoute =
+  CarreiraCareerIdDiretoriaRouteImport.update({
+    id: '/diretoria',
+    path: '/diretoria',
+    getParentRoute: () => CarreiraCareerIdRoute,
+  } as any)
 const CarreiraCareerIdElencoRoute = CarreiraCareerIdElencoRouteImport.update({
   id: '/elenco',
   path: '/elenco',
@@ -71,9 +82,26 @@ const CarreiraCareerIdEscalacaoRoute =
     path: '/escalacao',
     getParentRoute: () => CarreiraCareerIdRoute,
   } as any)
+const CarreiraCareerIdEstatisticasRoute =
+  CarreiraCareerIdEstatisticasRouteImport.update({
+    id: '/estatisticas',
+    path: '/estatisticas',
+    getParentRoute: () => CarreiraCareerIdRoute,
+  } as any)
+const CarreiraCareerIdFinancasRoute =
+  CarreiraCareerIdFinancasRouteImport.update({
+    id: '/financas',
+    path: '/financas',
+    getParentRoute: () => CarreiraCareerIdRoute,
+  } as any)
 const CarreiraCareerIdJogoRoute = CarreiraCareerIdJogoRouteImport.update({
   id: '/jogo',
   path: '/jogo',
+  getParentRoute: () => CarreiraCareerIdRoute,
+} as any)
+const CarreiraCareerIdMedicoRoute = CarreiraCareerIdMedicoRouteImport.update({
+  id: '/medico',
+  path: '/medico',
   getParentRoute: () => CarreiraCareerIdRoute,
 } as any)
 const CarreiraCareerIdMercadoRoute = CarreiraCareerIdMercadoRouteImport.update({
@@ -99,6 +127,11 @@ const CarreiraCareerIdPropostasRoute =
     path: '/propostas',
     getParentRoute: () => CarreiraCareerIdRoute,
   } as any)
+const CarreiraCareerIdSocialRoute = CarreiraCareerIdSocialRouteImport.update({
+  id: '/social',
+  path: '/social',
+  getParentRoute: () => CarreiraCareerIdRoute,
+} as any)
 const CarreiraCareerIdTabelaRoute = CarreiraCareerIdTabelaRouteImport.update({
   id: '/tabela',
   path: '/tabela',
@@ -112,13 +145,18 @@ export interface FileRoutesByFullPath {
   '/carreira/$careerId': typeof CarreiraCareerIdRouteWithChildren
   '/carreiras/nova': typeof CarreirasNovaRoute
   '/carreira/$careerId/clima': typeof CarreiraCareerIdClimaRoute
+  '/carreira/$careerId/diretoria': typeof CarreiraCareerIdDiretoriaRoute
   '/carreira/$careerId/elenco': typeof CarreiraCareerIdElencoRoute
   '/carreira/$careerId/escalacao': typeof CarreiraCareerIdEscalacaoRoute
+  '/carreira/$careerId/estatisticas': typeof CarreiraCareerIdEstatisticasRoute
+  '/carreira/$careerId/financas': typeof CarreiraCareerIdFinancasRoute
   '/carreira/$careerId/jogo': typeof CarreiraCareerIdJogoRoute
+  '/carreira/$careerId/medico': typeof CarreiraCareerIdMedicoRoute
   '/carreira/$careerId/mercado': typeof CarreiraCareerIdMercadoRoute
   '/carreira/$careerId/noticias': typeof CarreiraCareerIdNoticiasRoute
   '/carreira/$careerId/preparacao': typeof CarreiraCareerIdPreparacaoRoute
   '/carreira/$careerId/propostas': typeof CarreiraCareerIdPropostasRoute
+  '/carreira/$careerId/social': typeof CarreiraCareerIdSocialRoute
   '/carreira/$careerId/tabela': typeof CarreiraCareerIdTabelaRoute
   '/carreira/$careerId/': typeof CarreiraCareerIdIndexRoute
 }
@@ -128,13 +166,18 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/carreiras/nova': typeof CarreirasNovaRoute
   '/carreira/$careerId/clima': typeof CarreiraCareerIdClimaRoute
+  '/carreira/$careerId/diretoria': typeof CarreiraCareerIdDiretoriaRoute
   '/carreira/$careerId/elenco': typeof CarreiraCareerIdElencoRoute
   '/carreira/$careerId/escalacao': typeof CarreiraCareerIdEscalacaoRoute
+  '/carreira/$careerId/estatisticas': typeof CarreiraCareerIdEstatisticasRoute
+  '/carreira/$careerId/financas': typeof CarreiraCareerIdFinancasRoute
   '/carreira/$careerId/jogo': typeof CarreiraCareerIdJogoRoute
+  '/carreira/$careerId/medico': typeof CarreiraCareerIdMedicoRoute
   '/carreira/$careerId/mercado': typeof CarreiraCareerIdMercadoRoute
   '/carreira/$careerId/noticias': typeof CarreiraCareerIdNoticiasRoute
   '/carreira/$careerId/preparacao': typeof CarreiraCareerIdPreparacaoRoute
   '/carreira/$careerId/propostas': typeof CarreiraCareerIdPropostasRoute
+  '/carreira/$careerId/social': typeof CarreiraCareerIdSocialRoute
   '/carreira/$careerId/tabela': typeof CarreiraCareerIdTabelaRoute
   '/carreira/$careerId': typeof CarreiraCareerIdIndexRoute
 }
@@ -146,13 +189,18 @@ export interface FileRoutesById {
   '/carreira/$careerId': typeof CarreiraCareerIdRouteWithChildren
   '/carreiras/nova': typeof CarreirasNovaRoute
   '/carreira/$careerId/clima': typeof CarreiraCareerIdClimaRoute
+  '/carreira/$careerId/diretoria': typeof CarreiraCareerIdDiretoriaRoute
   '/carreira/$careerId/elenco': typeof CarreiraCareerIdElencoRoute
   '/carreira/$careerId/escalacao': typeof CarreiraCareerIdEscalacaoRoute
+  '/carreira/$careerId/estatisticas': typeof CarreiraCareerIdEstatisticasRoute
+  '/carreira/$careerId/financas': typeof CarreiraCareerIdFinancasRoute
   '/carreira/$careerId/jogo': typeof CarreiraCareerIdJogoRoute
+  '/carreira/$careerId/medico': typeof CarreiraCareerIdMedicoRoute
   '/carreira/$careerId/mercado': typeof CarreiraCareerIdMercadoRoute
   '/carreira/$careerId/noticias': typeof CarreiraCareerIdNoticiasRoute
   '/carreira/$careerId/preparacao': typeof CarreiraCareerIdPreparacaoRoute
   '/carreira/$careerId/propostas': typeof CarreiraCareerIdPropostasRoute
+  '/carreira/$careerId/social': typeof CarreiraCareerIdSocialRoute
   '/carreira/$careerId/tabela': typeof CarreiraCareerIdTabelaRoute
   '/carreira/$careerId/': typeof CarreiraCareerIdIndexRoute
 }
@@ -165,13 +213,18 @@ export interface FileRouteTypes {
     | '/carreira/$careerId'
     | '/carreiras/nova'
     | '/carreira/$careerId/clima'
+    | '/carreira/$careerId/diretoria'
     | '/carreira/$careerId/elenco'
     | '/carreira/$careerId/escalacao'
+    | '/carreira/$careerId/estatisticas'
+    | '/carreira/$careerId/financas'
     | '/carreira/$careerId/jogo'
+    | '/carreira/$careerId/medico'
     | '/carreira/$careerId/mercado'
     | '/carreira/$careerId/noticias'
     | '/carreira/$careerId/preparacao'
     | '/carreira/$careerId/propostas'
+    | '/carreira/$careerId/social'
     | '/carreira/$careerId/tabela'
     | '/carreira/$careerId/'
   fileRoutesByTo: FileRoutesByTo
@@ -181,13 +234,18 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/carreiras/nova'
     | '/carreira/$careerId/clima'
+    | '/carreira/$careerId/diretoria'
     | '/carreira/$careerId/elenco'
     | '/carreira/$careerId/escalacao'
+    | '/carreira/$careerId/estatisticas'
+    | '/carreira/$careerId/financas'
     | '/carreira/$careerId/jogo'
+    | '/carreira/$careerId/medico'
     | '/carreira/$careerId/mercado'
     | '/carreira/$careerId/noticias'
     | '/carreira/$careerId/preparacao'
     | '/carreira/$careerId/propostas'
+    | '/carreira/$careerId/social'
     | '/carreira/$careerId/tabela'
     | '/carreira/$careerId'
   id:
@@ -198,13 +256,18 @@ export interface FileRouteTypes {
     | '/carreira/$careerId'
     | '/carreiras/nova'
     | '/carreira/$careerId/clima'
+    | '/carreira/$careerId/diretoria'
     | '/carreira/$careerId/elenco'
     | '/carreira/$careerId/escalacao'
+    | '/carreira/$careerId/estatisticas'
+    | '/carreira/$careerId/financas'
     | '/carreira/$careerId/jogo'
+    | '/carreira/$careerId/medico'
     | '/carreira/$careerId/mercado'
     | '/carreira/$careerId/noticias'
     | '/carreira/$careerId/preparacao'
     | '/carreira/$careerId/propostas'
+    | '/carreira/$careerId/social'
     | '/carreira/$careerId/tabela'
     | '/carreira/$careerId/'
   fileRoutesById: FileRoutesById
@@ -267,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarreiraCareerIdClimaRouteImport
       parentRoute: typeof CarreiraCareerIdRoute
     }
+    '/carreira/$careerId/diretoria': {
+      id: '/carreira/$careerId/diretoria'
+      path: '/diretoria'
+      fullPath: '/carreira/$careerId/diretoria'
+      preLoaderRoute: typeof CarreiraCareerIdDiretoriaRouteImport
+      parentRoute: typeof CarreiraCareerIdRoute
+    }
     '/carreira/$careerId/elenco': {
       id: '/carreira/$careerId/elenco'
       path: '/elenco'
@@ -281,11 +351,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarreiraCareerIdEscalacaoRouteImport
       parentRoute: typeof CarreiraCareerIdRoute
     }
+    '/carreira/$careerId/estatisticas': {
+      id: '/carreira/$careerId/estatisticas'
+      path: '/estatisticas'
+      fullPath: '/carreira/$careerId/estatisticas'
+      preLoaderRoute: typeof CarreiraCareerIdEstatisticasRouteImport
+      parentRoute: typeof CarreiraCareerIdRoute
+    }
+    '/carreira/$careerId/financas': {
+      id: '/carreira/$careerId/financas'
+      path: '/financas'
+      fullPath: '/carreira/$careerId/financas'
+      preLoaderRoute: typeof CarreiraCareerIdFinancasRouteImport
+      parentRoute: typeof CarreiraCareerIdRoute
+    }
     '/carreira/$careerId/jogo': {
       id: '/carreira/$careerId/jogo'
       path: '/jogo'
       fullPath: '/carreira/$careerId/jogo'
       preLoaderRoute: typeof CarreiraCareerIdJogoRouteImport
+      parentRoute: typeof CarreiraCareerIdRoute
+    }
+    '/carreira/$careerId/medico': {
+      id: '/carreira/$careerId/medico'
+      path: '/medico'
+      fullPath: '/carreira/$careerId/medico'
+      preLoaderRoute: typeof CarreiraCareerIdMedicoRouteImport
       parentRoute: typeof CarreiraCareerIdRoute
     }
     '/carreira/$careerId/mercado': {
@@ -316,6 +407,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarreiraCareerIdPropostasRouteImport
       parentRoute: typeof CarreiraCareerIdRoute
     }
+    '/carreira/$careerId/social': {
+      id: '/carreira/$careerId/social'
+      path: '/social'
+      fullPath: '/carreira/$careerId/social'
+      preLoaderRoute: typeof CarreiraCareerIdSocialRouteImport
+      parentRoute: typeof CarreiraCareerIdRoute
+    }
     '/carreira/$careerId/tabela': {
       id: '/carreira/$careerId/tabela'
       path: '/tabela'
@@ -340,26 +438,36 @@ const CarreirasRouteWithChildren = CarreirasRoute._addFileChildren(
 
 interface CarreiraCareerIdRouteChildren {
   CarreiraCareerIdClimaRoute: typeof CarreiraCareerIdClimaRoute
+  CarreiraCareerIdDiretoriaRoute: typeof CarreiraCareerIdDiretoriaRoute
   CarreiraCareerIdElencoRoute: typeof CarreiraCareerIdElencoRoute
   CarreiraCareerIdEscalacaoRoute: typeof CarreiraCareerIdEscalacaoRoute
+  CarreiraCareerIdEstatisticasRoute: typeof CarreiraCareerIdEstatisticasRoute
+  CarreiraCareerIdFinancasRoute: typeof CarreiraCareerIdFinancasRoute
   CarreiraCareerIdJogoRoute: typeof CarreiraCareerIdJogoRoute
+  CarreiraCareerIdMedicoRoute: typeof CarreiraCareerIdMedicoRoute
   CarreiraCareerIdMercadoRoute: typeof CarreiraCareerIdMercadoRoute
   CarreiraCareerIdNoticiasRoute: typeof CarreiraCareerIdNoticiasRoute
   CarreiraCareerIdPreparacaoRoute: typeof CarreiraCareerIdPreparacaoRoute
   CarreiraCareerIdPropostasRoute: typeof CarreiraCareerIdPropostasRoute
+  CarreiraCareerIdSocialRoute: typeof CarreiraCareerIdSocialRoute
   CarreiraCareerIdTabelaRoute: typeof CarreiraCareerIdTabelaRoute
   CarreiraCareerIdIndexRoute: typeof CarreiraCareerIdIndexRoute
 }
 
 const CarreiraCareerIdRouteChildren: CarreiraCareerIdRouteChildren = {
   CarreiraCareerIdClimaRoute: CarreiraCareerIdClimaRoute,
+  CarreiraCareerIdDiretoriaRoute: CarreiraCareerIdDiretoriaRoute,
   CarreiraCareerIdElencoRoute: CarreiraCareerIdElencoRoute,
   CarreiraCareerIdEscalacaoRoute: CarreiraCareerIdEscalacaoRoute,
+  CarreiraCareerIdEstatisticasRoute: CarreiraCareerIdEstatisticasRoute,
+  CarreiraCareerIdFinancasRoute: CarreiraCareerIdFinancasRoute,
   CarreiraCareerIdJogoRoute: CarreiraCareerIdJogoRoute,
+  CarreiraCareerIdMedicoRoute: CarreiraCareerIdMedicoRoute,
   CarreiraCareerIdMercadoRoute: CarreiraCareerIdMercadoRoute,
   CarreiraCareerIdNoticiasRoute: CarreiraCareerIdNoticiasRoute,
   CarreiraCareerIdPreparacaoRoute: CarreiraCareerIdPreparacaoRoute,
   CarreiraCareerIdPropostasRoute: CarreiraCareerIdPropostasRoute,
+  CarreiraCareerIdSocialRoute: CarreiraCareerIdSocialRoute,
   CarreiraCareerIdTabelaRoute: CarreiraCareerIdTabelaRoute,
   CarreiraCareerIdIndexRoute: CarreiraCareerIdIndexRoute,
 }
