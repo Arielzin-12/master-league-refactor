@@ -16,7 +16,7 @@ import {
 } from "@/lib/narrative";
 import { isWindowOpen, isDerby, derbyName } from "@/lib/season";
 import { resolveMatchday } from "@/lib/fixtures";
-import { loadLineup, clearLineup, type SavedLineup } from "@/lib/lineup";
+import { loadLineup, type SavedLineup } from "@/lib/lineup";
 import { POSITION_ORDER, normalizePosition } from "@/data/squads";
 import { toast } from "sonner";
 import { Trophy, ChevronRight, Goal, HandHelping, Square, Plus, Minus, ArrowRightLeft, Flame, ClipboardList, Trash2 } from "lucide-react";
@@ -681,7 +681,6 @@ function JogoPage() {
 
     toast.success("Resultado registrado!");
     if (bonus > 0) toast.success(`💰 Bônus por vitória: ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "EUR" }).format(bonus)}`);
-    clearLineup(careerId);
     if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
     await refresh();
 
