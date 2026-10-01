@@ -124,6 +124,9 @@ function JogoPage() {
   } | null>(null);
   const [pressTotal, setPressTotal] = useState(4); // total alvo de perguntas
 
+  const draftKey = `match-draft:${careerId}`;
+  const [draftRestored, setDraftRestored] = useState(false);
+
   // Chama edge function pra gerar a próxima pergunta da coletiva.
   const fetchNextAIQuestion = async (
     previousAnswers: { q: string; a: string }[],
@@ -167,6 +170,39 @@ function JogoPage() {
       setPressLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.gf !== undefined) setGf(d.gf);
+        if (d.ga !== undefined) setGa(d.ga);
+        if (d.goals) setGoals(d.goals);
+        if (d.assists) setAssists(d.assists);
+        if (d.yellow) setYellow(d.yellow);
+        if (d.red) setRed(d.red);
+        if (d.liveSubs) setLiveSubs(d.liveSubs);
+        if (d.subOutId) setSubOutId(d.subOutId);
+        if (d.subInId) setSubInId(d.subInId);
+        if (d.subMinute) setSubMinute(d.subMinute);
+        if (d.activeStat) setActiveStat(d.activeStat);
+        if (d.position !== undefined) setPosition(d.position);
+        if (d.motmId) setMotmId(d.motmId);
+        if (d.notes) setNotes(d.notes);
+      }
+    } catch {}
+    setDraftRestored(true);
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftRestored || typeof window === "undefined") return;
+    window.localStorage.setItem(draftKey, JSON.stringify({
+      gf, ga, goals, assists, yellow, red, liveSubs, subOutId, subInId, subMinute,
+      activeStat, position, motmId, notes, savedAt: Date.now(),
+    }));
+  }, [draftRestored, draftKey, gf, ga, goals, assists, yellow, red, liveSubs, subOutId, subInId, subMinute, activeStat, position, motmId, notes]);
 
   useEffect(() => {
     (async () => {
@@ -679,6 +715,7 @@ function JogoPage() {
     toast.success("Resultado registrado!");
     if (bonus > 0) toast.success(`💰 Bônus por vitória: ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "EUR" }).format(bonus)}`);
     clearLineup(careerId);
+    if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
     await refresh();
 
     const ctx = {
