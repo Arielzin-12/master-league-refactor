@@ -273,7 +273,7 @@ export interface MarketSeedPlayer {
   age: number;
 }
 
-const ovrFromValue = (eur: number, age: number) => {
+export const ovrFromValue = (eur: number, age: number) => {
   let o: number;
   if (eur >= 30_000_000) o = 85;
   else if (eur >= 18_000_000) o = 83;
@@ -289,7 +289,7 @@ const ovrFromValue = (eur: number, age: number) => {
   else if (age >= 35) o -= 2;
   return Math.max(58, Math.min(91, o));
 };
-const wageFromValue = (eur: number, o: number) => {
+export const wageFromValue = (eur: number, o: number) => {
   const base = Math.max(20_000, Math.round(eur * 0.012));
   const floor = Math.max(20_000, (o - 65) * 8000);
   return Math.max(base, floor);
