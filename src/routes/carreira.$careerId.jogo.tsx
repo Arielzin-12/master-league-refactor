@@ -9,22 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   fanReaction,
   postMatchHeadline,
-  postMatchPressIntro,
 } from "@/lib/narrative";
 import { isWindowOpen, isDerby, derbyName } from "@/lib/season";
 import { resolveMatchday } from "@/lib/fixtures";
 import { loadLineup, clearLineup, type SavedLineup } from "@/lib/lineup";
 import { POSITION_ORDER, normalizePosition } from "@/data/squads";
 import { toast } from "sonner";
-import { Trophy, ChevronRight, Mic, ChevronLeft, Goal, HandHelping, Square, Plus, Minus, ArrowRightLeft, Flame, ClipboardList, Trash2 } from "lucide-react";
+import { Trophy, ChevronRight, Goal, HandHelping, Square, Plus, Minus, ArrowRightLeft, Flame, ClipboardList, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { victoryBonus, buildIncomingOffers } from "@/lib/players";
 import { pushAINews } from "@/lib/news";
-import coachPressImg from "@/assets/coach-press.jpg";
 
 interface SquadRow {
   id: string;
@@ -99,77 +96,8 @@ function JogoPage() {
   const [motmId, setMotmId] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Coletiva pós-jogo
-  const [pressOpen, setPressOpen] = useState(false);
-  const [pressIntro, setPressIntro] = useState("");
-  const [pressQuestions, setPressQuestions] = useState<string[]>([]);
-  const [pressIndex, setPressIndex] = useState(0);
-  const [pressAnswer, setPressAnswer] = useState("");
-  const [pressAnswers, setPressAnswers] = useState<{ q: string; a: string }[]>([]);
-  const [pressSaving, setPressSaving] = useState(false);
-  const [pressLoading, setPressLoading] = useState(false);
-  const [pressCtx, setPressCtx] = useState<{
-    clubName: string;
-    opponent: string;
-    gf: number;
-    ga: number;
-    home: boolean;
-    position: number;
-    matchday: number;
-    derby: string | null;
-    scorers: string;
-    assists: string;
-    yellow: string;
-    red: string;
-  } | null>(null);
-  const [pressTotal, setPressTotal] = useState(4); // total alvo de perguntas
-
   const draftKey = `match-draft:${careerId}`;
   const [draftRestored, setDraftRestored] = useState(false);
-
-  // Chama edge function pra gerar a próxima pergunta da coletiva.
-  const fetchNextAIQuestion = async (
-    previousAnswers: { q: string; a: string }[],
-    extra?: { yellow?: string; red?: string; derby?: string | null; matchday?: number },
-  ) => {
-    const baseCtx = pressCtx;
-    if (!baseCtx && !extra) return;
-    const ctx = {
-      ...(baseCtx ?? {
-        clubName: club.name,
-        opponent: opponent.trim(),
-        gf,
-        ga,
-        home,
-        position,
-        matchday: career.matchday,
-        derby: extra?.derby ?? null,
-        scorers: namesFromCount(goals, players),
-        assists: namesFromCount(assists, players),
-        yellow: extra?.yellow ?? "",
-        red: extra?.red ?? "",
-      }),
-      previousAnswers,
-    };
-    setPressLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("press-conference", {
-        body: { context: ctx, count: 1 },
-      });
-      if (error) throw error;
-      const q = (data?.questions?.[0] as string | undefined)?.trim();
-      if (q) {
-        setPressQuestions((prev) => [...prev, q]);
-      } else {
-        toast.error("Não foi possível gerar a próxima pergunta.");
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao gerar pergunta.";
-      toast.error(msg);
-    } finally {
-      setPressLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -718,114 +646,7 @@ function JogoPage() {
     if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
     await refresh();
 
-    const ctx = {
-      clubName: club.name,
-      opponent: opponent.trim(),
-      gf, ga,
-      scorers: scorersStr,
-      assists: assistsStr,
-      home,
-      position,
-      clubSlug: club.slug,
-    };
-    setPressIntro(postMatchPressIntro(ctx));
-    setPressQuestions([]);
-    setPressIndex(0);
-    setPressAnswer("");
-    setPressAnswers([]);
-    const fullCtx = {
-      clubName: club.name,
-      opponent: opponent.trim(),
-      gf,
-      ga,
-      home,
-      position,
-      matchday: career.matchday,
-      derby: dName,
-      scorers: scorersStr,
-      assists: assistsStr,
-      yellow: yellowStr,
-      red: redStr,
-    };
-    setPressCtx(fullCtx);
-    setPressTotal(4);
-    setPressOpen(true);
     setBusy(false);
-    // Dispara primeira pergunta da IA usando o contexto recém-montado
-    setPressLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("press-conference", {
-        body: { context: { ...fullCtx, previousAnswers: [] }, count: 1 },
-      });
-      if (error) throw error;
-      const q = (data?.questions?.[0] as string | undefined)?.trim();
-      if (q) setPressQuestions([q]);
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao gerar pergunta.");
-    } finally {
-      setPressLoading(false);
-    }
-  };
-
-  const advancePress = async () => {
-    const currentQ = pressQuestions[pressIndex];
-    if (!currentQ) return;
-    const trimmed = pressAnswer.trim();
-    if (!trimmed) { toast.error("Responda à pergunta antes de continuar."); return; }
-    const updated = [...pressAnswers, { q: currentQ, a: trimmed }];
-    setPressAnswers(updated);
-    setPressAnswer("");
-
-    // Ainda não atingiu o total alvo de perguntas: pede próxima pergunta à IA
-    // levando em conta as respostas anteriores (perguntas dinâmicas e contextuais).
-    if (updated.length < pressTotal) {
-      setPressLoading(true);
-      try {
-        const ctxBase = pressCtx ?? {
-          clubName: club.name,
-          opponent: opponent.trim(),
-          gf, ga, home, position,
-          matchday: career.matchday,
-          derby: dName,
-          scorers: namesFromCount(goals, players),
-          assists: namesFromCount(assists, players),
-          yellow: namesFromCount(yellow, players),
-          red: namesFromCount(red, players),
-        };
-        const { data, error } = await supabase.functions.invoke("press-conference", {
-          body: { context: { ...ctxBase, previousAnswers: updated }, count: 1 },
-        });
-        if (error) throw error;
-        const q = (data?.questions?.[0] as string | undefined)?.trim();
-        if (q) {
-          setPressQuestions((prev) => [...prev, q]);
-          setPressIndex(pressIndex + 1);
-          setPressLoading(false);
-          return;
-        }
-      } catch (err: unknown) {
-        toast.error(err instanceof Error ? err.message : "Erro ao gerar próxima pergunta.");
-        setPressLoading(false);
-        return;
-      }
-      setPressLoading(false);
-    }
-
-    setPressSaving(true);
-    const body = updated
-      .map((item, i) => `**Pergunta ${i + 1}:** ${item.q}\n\n**Resposta do técnico:** ${item.a}`)
-      .join("\n\n---\n\n");
-    const { error } = await supabase.from("news_feed").insert({
-      career_id: career.id,
-      user_id: career.user_id,
-      kind: "press",
-      title: `Coletiva: ${club.name} x ${opponent.trim()}`,
-      body: `${pressIntro}\n\n${body}\n\n_A coletiva foi concedida no auditório do ${club.name} logo após o apito final, com a presença da imprensa esportiva._`,
-    });
-    setPressSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Coletiva publicada na imprensa!");
-    setPressOpen(false);
     navigate({ to: "/carreira/$careerId", params: { careerId } });
   };
 
@@ -1160,77 +981,6 @@ function JogoPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={pressOpen} onOpenChange={(v) => { if (!pressSaving) setPressOpen(v); }}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mic className="h-5 w-5 text-primary" /> Coletiva de imprensa
-            </DialogTitle>
-            <DialogDescription>{pressIntro}</DialogDescription>
-          </DialogHeader>
-
-          <div className="overflow-hidden rounded-lg border border-border/40">
-            <img src={coachPressImg} alt="Técnico falando à imprensa" loading="lazy" width={1280} height={768} className="h-40 w-full object-cover" />
-          </div>
-
-          {pressLoading && pressQuestions.length === 0 && (
-            <div className="flex items-center gap-3 rounded-md border border-border/40 bg-muted/20 p-4 text-sm text-muted-foreground">
-              <Mic className="h-4 w-4 animate-pulse text-primary" />
-              IA do repórter está formulando a primeira pergunta...
-            </div>
-          )}
-
-          {pressQuestions.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Pergunta {pressIndex + 1} de {pressTotal}</span>
-                <span>🎤 Repórter (IA)</span>
-              </div>
-              <div className="rounded-md border border-border/50 bg-muted/30 p-4">
-                <p className="text-sm font-medium leading-relaxed">{pressQuestions[pressIndex]}</p>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Sua resposta</Label>
-                <Textarea
-                  value={pressAnswer}
-                  onChange={(e) => setPressAnswer(e.target.value)}
-                  rows={4}
-                  placeholder="Responda como técnico..."
-                  autoFocus
-                />
-              </div>
-              {pressAnswers.length > 0 && (
-                <div className="max-h-32 space-y-2 overflow-y-auto rounded border border-border/40 bg-background/30 p-3 text-xs">
-                  {pressAnswers.map((item, i) => (
-                    <div key={i}>
-                      <p className="font-semibold text-muted-foreground">{i + 1}. {item.q}</p>
-                      <p className="pl-2 text-foreground/80">↳ {item.a}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <div className="flex flex-1 items-center text-xs text-muted-foreground">
-              <ChevronLeft className="mr-1 h-3 w-3" />
-              Perguntas geradas por IA com base no jogo.
-            </div>
-            <Button onClick={advancePress} disabled={pressSaving || pressLoading || pressQuestions.length === 0}>
-              {pressLoading ? (
-                <>Gerando próxima... <Mic className="ml-1 h-4 w-4 animate-pulse" /></>
-              ) : pressAnswers.length + 1 < pressTotal ? (
-                <>Próxima pergunta <ChevronRight className="ml-1 h-4 w-4" /></>
-              ) : pressSaving ? (
-                "Publicando..."
-              ) : (
-                <>Encerrar coletiva <Mic className="ml-1 h-4 w-4" /></>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
