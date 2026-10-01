@@ -2,8 +2,11 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useCareer } from "@/lib/career-context";
 import { supabase } from "@/integrations/supabase/client";
-import { sortTable, type StandingRow } from "@/lib/fixtures";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface MatchRow {
   id: string;
@@ -34,7 +37,6 @@ function TabelaPage() {
   const { career, club } = useCareer();
   const { careerId } = useParams({ from: "/carreira/$careerId/tabela" });
   const [matches, setMatches] = useState<MatchRow[]>([]);
-  const [table, setTable] = useState<StandingRow[]>([]);
   const [fixtures, setFixtures] = useState<FixtureLite[]>([]);
 
   useEffect(() => {
@@ -47,11 +49,6 @@ function TabelaPage() {
           .order("matchday", { ascending: false })
           .limit(15),
         supabase
-          .from("standings")
-          .select("club_name, club_slug, played, wins, draws, losses, goals_for, goals_against, points")
-          .eq("career_id", careerId)
-          .eq("season", career.season),
-        supabase
           .from("fixtures")
           .select("id, matchday, home_club, away_club, home_goals, away_goals, played, is_user_match")
           .eq("career_id", careerId)
@@ -60,72 +57,24 @@ function TabelaPage() {
           .order("matchday", { ascending: true }),
       ]);
       setMatches((m.data ?? []) as MatchRow[]);
-      setTable(sortTable((s.data ?? []) as StandingRow[]));
       setFixtures((f.data ?? []) as FixtureLite[]);
     })();
   }, [careerId, career.season, career.matchday]);
 
+  const updateFixture = async (fixtureId: string, opponent: string, home: boolean) => {
+    const trimmed = opponent.trim();
+    if (!trimmed) { toast.error("Informe um adversário."); return; }
+    const payload = home
+      ? { home_club: club.name, away_club: trimmed }
+      : { home_club: trimmed, away_club: club.name };
+    const { error } = await supabase.from("fixtures").update(payload).eq("id", fixtureId).eq("career_id", careerId);
+    if (error) { toast.error(error.message); return; }
+    setFixtures((prev) => prev.map((f) => f.id === fixtureId ? { ...f, ...payload } : f));
+    toast.success("Jogo do calendário atualizado.");
+  };
+
   return (
     <div className="space-y-6">
-      <Card className="border-border/60 bg-card/70">
-        <CardHeader>
-          <CardTitle>Classificação</CardTitle>
-          <CardDescription>
-            {club.league} • Temporada {career.season} • Rodada {Math.min(career.matchday, 38)} de 38
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {table.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              A tabela aparece assim que o campeonato desta carreira for criado.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/60 text-left text-xs uppercase text-muted-foreground">
-                    <th className="py-2 pr-2">#</th>
-                    <th className="py-2 pr-2">Clube</th>
-                    <th className="py-2 px-2 text-center">P</th>
-                    <th className="py-2 px-2 text-center">J</th>
-                    <th className="py-2 px-2 text-center">V</th>
-                    <th className="py-2 px-2 text-center">E</th>
-                    <th className="py-2 px-2 text-center">D</th>
-                    <th className="py-2 px-2 text-center">GP</th>
-                    <th className="py-2 px-2 text-center">GC</th>
-                    <th className="py-2 pl-2 text-center">SG</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {table.map((row, i) => {
-                    const mine = row.club_name === club.name;
-                    const zone =
-                      i < 4 ? "border-l-2 border-l-primary" : i >= table.length - 4 ? "border-l-2 border-l-destructive" : "";
-                    return (
-                      <tr
-                        key={row.club_name}
-                        className={`border-b border-border/30 ${zone} ${mine ? "bg-primary/10 font-semibold" : ""}`}
-                      >
-                        <td className="py-2 pr-2 text-muted-foreground">{i + 1}</td>
-                        <td className="py-2 pr-2">{row.club_name}</td>
-                        <td className="py-2 px-2 text-center font-bold">{row.points}</td>
-                        <td className="py-2 px-2 text-center">{row.played}</td>
-                        <td className="py-2 px-2 text-center">{row.wins}</td>
-                        <td className="py-2 px-2 text-center">{row.draws}</td>
-                        <td className="py-2 px-2 text-center">{row.losses}</td>
-                        <td className="py-2 px-2 text-center">{row.goals_for}</td>
-                        <td className="py-2 px-2 text-center">{row.goals_against}</td>
-                        <td className="py-2 pl-2 text-center">{row.goals_for - row.goals_against}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="border-border/60 bg-card/70">
           <CardHeader>
@@ -136,7 +85,7 @@ function TabelaPage() {
             {fixtures.length === 0 ? (
               <p className="text-sm text-muted-foreground">Calendário ainda não gerado para esta carreira.</p>
             ) : (
-              <ul className="max-h-[420px] space-y-1 overflow-y-auto pr-1">
+              <ul className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
                 {fixtures.map((f) => {
                   const home = f.home_club === club.name;
                   const opp = home ? f.away_club : f.home_club;
@@ -144,21 +93,8 @@ function TabelaPage() {
                   const ga = home ? f.away_goals : f.home_goals;
                   const current = f.matchday === career.matchday;
                   return (
-                    <li
-                      key={f.id}
-                      className={`flex items-center justify-between rounded-md border px-3 py-2 text-sm ${
-                        current ? "border-primary/60 bg-primary/10" : "border-border/40 bg-background/30"
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="w-8 text-xs text-muted-foreground">R{f.matchday}</span>
-                        <span className="w-10 text-xs uppercase text-muted-foreground">{home ? "Casa" : "Fora"}</span>
-                        <span>{opp}</span>
-                      </span>
-                      <span className="font-bold">
-                        {f.played && gf !== null && ga !== null ? `${gf} x ${ga}` : "—"}
-                      </span>
-                    </li>
+                    <FixtureEditor key={f.id} fixture={f} current={current} opponent={opp} home={home}
+                      score={f.played && gf !== null && ga !== null ? `${gf} x ${ga}` : "—"} onSave={updateFixture} />
                   );
                 })}
               </ul>
@@ -214,5 +150,35 @@ function TabelaPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function FixtureEditor({ fixture, current, opponent, home, score, onSave }: {
+  fixture: FixtureLite;
+  current: boolean;
+  opponent: string;
+  home: boolean;
+  score: string;
+  onSave: (id: string, opponent: string, home: boolean) => Promise<void>;
+}) {
+  const [value, setValue] = useState(opponent);
+  const [side, setSide] = useState(home ? "home" : "away");
+  useEffect(() => { setValue(opponent); setSide(home ? "home" : "away"); }, [opponent, home]);
+  return (
+    <li className={`rounded-md border p-3 ${current ? "border-primary/60 bg-primary/10" : "border-border/40 bg-background/30"}`}>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="flex items-center gap-3 md:w-28">
+          <span className="text-xs font-bold text-muted-foreground">R{fixture.matchday}</span>
+          {current && <span className="rounded bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">ATUAL</span>}
+        </div>
+        <Input value={value} onChange={(e) => setValue(e.target.value)} className="md:flex-1" placeholder="Adversário" />
+        <Select value={side} onValueChange={setSide}>
+          <SelectTrigger className="md:w-32"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="home">Casa</SelectItem><SelectItem value="away">Fora</SelectItem></SelectContent>
+        </Select>
+        <span className="min-w-12 text-center text-sm font-bold">{score}</span>
+        <Button size="sm" onClick={() => onSave(fixture.id, value, side === "home")}>Salvar</Button>
+      </div>
+    </li>
   );
 }
