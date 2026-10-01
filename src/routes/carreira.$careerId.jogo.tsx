@@ -556,7 +556,7 @@ function JogoPage() {
         derby: dName, gols: scorersStr, assistencias: assistsStr,
         amarelos: yellowStr, vermelhos: redStr,
         atuacao_defensiva: defensiveNotes.trim() || null,
-        clean_sheet_equipe: ga === 0,\n        atuacao_defensiva: defensiveNotes.trim() || null,\n        clean_sheet_equipe: ga === 0,
+        clean_sheet_equipe: ga === 0,
       },
       fallbackTitle: postMatchHeadline(opponent.trim(), gf, ga, club.name, club.slug),
       fallbackBody: detailedBody,
