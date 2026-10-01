@@ -516,7 +516,7 @@ function JogoPage() {
         }).join(" • ")}`
       : "";
 
-    const defensiveBlock = defensiveNotes.trim()\n      ? `🛡️ **Atuação defensiva:** ${defensiveNotes.trim()}`\n      : "🛡️ **Atuação defensiva:** Nenhum destaque defensivo registrado.";\n\n    const detailedBody = [
+    const detailedBody = [
       `**${club.name} ${gf} x ${ga} ${opponent.trim()}** — Rodada ${career.matchday} (${home ? "Casa" : "Fora"}).`,
       "",
       xgStr,
@@ -967,6 +967,17 @@ function JogoPage() {
             <p className="text-[10px] text-muted-foreground">
               Quem entrar fica disponível para registrar gols, assistências e cartões.
             </p>
+          </div>
+
+          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
+            <div className="font-semibold">🧤 Clean sheet</div>
+            <p className="mt-1 text-xs text-muted-foreground">{ga === 0 ? "Sim — o time não sofreu gols. Goleiros e defensores elegíveis terão o clean sheet contabilizado automaticamente." : "Não — o adversário marcou pelo menos um gol."}</p>
+          </div>
+
+          <div className="space-y-2 rounded-md border border-border/40 bg-background/20 p-3">
+            <Label>🛡️ Atuação defensiva</Label>
+            <Textarea value={defensiveNotes} onChange={(e) => setDefensiveNotes(e.target.value)} placeholder="Ex.: Rochet fez 3 defesas difíceis; zagueiro salvou em cima da linha; Bidu deu um carrinho perfeito..." className="min-h-20 resize-none" />
+            <p className="text-[10px] text-muted-foreground">A IA vai interpretar os nomes e as ações defensivas para destacar a atuação na notícia. O clean sheet é calculado automaticamente pelo placar e pelo tempo em campo.</p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
