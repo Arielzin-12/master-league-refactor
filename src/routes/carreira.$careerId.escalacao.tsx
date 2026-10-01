@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isDerby, derbyName } from "@/lib/season";
-import { saveLineup } from "@/lib/lineup";
+import { loadLineup, saveLineup } from "@/lib/lineup";
 import { toast } from "sonner";
 import { Users, Trophy, ArrowRight, Flame, Star } from "lucide-react";
 import { POSITION_ORDER, POSITION_LIST, POSITION_LABEL, normalizePosition, type Position } from "@/data/squads";
@@ -50,7 +50,16 @@ function EscalacaoPage() {
       const rows = (data ?? []) as SquadRow[];
       setPlayers(rows);
       const cap = rows.find((p) => p.is_captain);
-      if (cap) setCaptainId(cap.id);
+      const saved = loadLineup(careerId);
+      const validIds = new Set(rows.map((p) => p.id));
+      if (saved) {
+        setStarters(new Set(saved.starters.filter((id) => validIds.has(id)).slice(0, 11)));
+        setBench(new Set(saved.bench.filter((id) => validIds.has(id)).slice(0, 7)));
+        setOpponent(saved.opponent || career.next_opponent || club.rivals[0] || "Adversário");
+        setHome(saved.home ?? true);
+        if (saved.captainId && validIds.has(saved.captainId) && saved.starters.includes(saved.captainId)) setCaptainId(saved.captainId);
+        else if (cap) setCaptainId(cap.id);
+      } else if (cap) setCaptainId(cap.id);
     })();
   }, [careerId, career.club_slug]);
 
@@ -157,6 +166,7 @@ function EscalacaoPage() {
       subs: [], // substituições agora são feitas durante o jogo
       opponent: opponent.trim(),
       home,
+      captainId: captainId || undefined,
     });
     toast.success("Escalação confirmada! Hora do jogo.");
     navigate({ to: "/carreira/$careerId/jogo", params: { careerId } });
