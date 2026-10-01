@@ -226,6 +226,108 @@ export async function createCareer(input: NewCareerInput) {
   return career;
 }
 
+export interface ManagerOfferRow {
+  id: string; career_id: string; user_id: string; season: number; matchday: number;
+  phase: "midseason" | "endseason"; club_slug: ClubSlug; club_name: string;
+  salary_eur: number; bonus_eur: number; contract_years: number; interest: number;
+  status: string; negotiation_round: number; created_at: string;
+}
+
+const REAL_LIFE_FIRST_HALF_PPG: Partial<Record<ClubSlug, number>> = {
+  palmeiras: 44 / 19, flamengo: 40 / 19, corinthians: 27 / 19, vasco: 20 / 19,
+  fluminense: 32 / 19, cruzeiro: 27 / 19, gremio: 21 / 19, santos: 21 / 19, internacional: 21 / 19,
+  "real-madrid": 15 / 7, barcelona: 21 / 7, chelsea: 7 / 5,
+};
+
+function managerOfferSalary(clubSlug: ClubSlug): number {
+  return Math.max(45_000, Math.round(CLUBS[clubSlug].budgetEur * 0.001));
+}
+
+function managerOfferInterest(clubSlug: ClubSlug, currentClubSlug: ClubSlug, currentPosition: number): number {
+  const targetBudget = CLUBS[clubSlug].budgetEur;
+  const currentBudget = CLUBS[currentClubSlug].budgetEur;
+  const prestige = Math.min(20, Math.max(0, Math.round((targetBudget - currentBudget) / 5_000_000)));
+  const performance = currentPosition <= 6 ? 18 : currentPosition <= 10 ? 10 : currentPosition <= 16 ? 5 : 0;
+  return Math.min(95, 45 + prestige + performance);
+}
+
+export async function generateManagerOffers(params: {
+  careerId: string; userId: string; currentClubSlug: ClubSlug; currentSeason: number;
+  matchday: number; leaguePosition: number; phase: "midseason" | "endseason";
+}) {
+  const { careerId, userId, currentClubSlug, currentSeason, matchday, leaguePosition, phase } = params;
+  const candidates = (Object.keys(CLUBS) as ClubSlug[]).filter((slug) => slug !== currentClubSlug);
+  const count = leaguePosition <= 5 ? 4 : leaguePosition <= 10 ? 3 : 2;
+  const shuffled = [...candidates].sort(() => Math.random() - 0.5).slice(0, count);
+  const { data: existing } = await supabase.from("manager_offers").select("club_slug").eq("career_id", careerId).eq("season", currentSeason).eq("phase", phase);
+  const already = new Set((existing ?? []).map((x) => x.club_slug));
+  const rows = shuffled.filter((slug) => !already.has(slug)).map((slug) => {
+    const salary = managerOfferSalary(slug);
+    return { career_id: careerId, user_id: userId, season: currentSeason, matchday, phase, club_slug: slug,
+      club_name: CLUBS[slug].name, salary_eur: salary, bonus_eur: Math.round(salary * (phase === "endseason" ? 6 : 4)),
+      contract_years: phase === "endseason" ? 3 : 2, interest: managerOfferInterest(slug, currentClubSlug, leaguePosition),
+      status: "pending", negotiation_round: 1 };
+  });
+  if (rows.length) {
+    const { error } = await supabase.from("manager_offers").insert(rows);
+    if (error) throw error;
+    await pushAINews({ careerId, userId, kind: "transfer",
+      hint: "Anunciar que clubes fizeram propostas para contratar o treinador. Usar somente clubes da lista da carreira.",
+      context: { clubes_interessados: rows.map((r) => r.club_name), rodada: matchday, fase: phase },
+      fallbackTitle: phase === "midseason" ? "Mercado de treinadores se movimenta" : "Fim de temporada movimenta o mercado de treinadores",
+      fallbackBody: "O trabalho do treinador despertou interesse e " + rows.length + " clubes apresentaram propostas.",
+    });
+  }
+  return rows;
+}
+
+export async function switchManagerClub(params: {
+  careerId: string; userId: string; managerName: string; currentClubSlug: ClubSlug; targetClubSlug: ClubSlug;
+  season: number; currentMatchday: number; targetSalary: number; contractYears: number;
+}) {
+  const { careerId, userId, managerName, currentClubSlug, targetClubSlug, season, currentMatchday, targetSalary, contractYears } = params;
+  const targetClub = CLUBS[targetClubSlug]; const oldClub = CLUBS[currentClubSlug];
+  if (currentMatchday >= 19) {
+    const { data: fixtures } = await supabase.from("fixtures").select("id, matchday, home_club, away_club, played").eq("career_id", careerId).eq("season", season).lte("matchday", 19);
+    const targetPpg = REAL_LIFE_FIRST_HALF_PPG[targetClubSlug] ?? 1.5;
+    const poisson = (lambda: number) => { const l = Math.exp(-lambda); let k = 0; let p = 1; do { k++; p *= Math.random(); } while (p > l); return Math.min(6, k - 1); };
+    const score = (home: string, away: string): [number, number] => {
+      const isTargetHome = home === targetClub.name; const isTargetAway = away === targetClub.name;
+      if (!isTargetHome && !isTargetAway) return [poisson(1.15), poisson(1.05)];
+      const advantage = ((targetPpg - 1.5) * 0.75) + (isTargetHome ? 0.25 : -0.08);
+      const targetGoals = poisson(Math.max(0.35, 1.25 + advantage));
+      const opponentGoals = poisson(Math.max(0.35, 1.25 - advantage));
+      return isTargetHome ? [targetGoals, opponentGoals] : [opponentGoals, targetGoals];
+    };
+    for (const f of fixtures ?? []) {
+      if (f.played) continue;
+      const [hg, ag] = score(f.home_club, f.away_club);
+      await supabase.from("fixtures").update({ home_goals: hg, away_goals: ag, played: true }).eq("id", f.id);
+    }
+    const { recomputeStandings } = await import("@/lib/fixtures");
+    await recomputeStandings({ careerId, userId, season });
+  }
+  const { data: targetPlayers } = await supabase.from("squad_players").select("name, position, overall, weekly_wage_eur, market_value_eur, age, potential").eq("career_id", careerId).eq("club_slug", targetClubSlug);
+  const { data: oldPlayers } = await supabase.from("squad_players").select("name, position, overall, weekly_wage_eur, market_value_eur, age, potential").eq("career_id", careerId).eq("club_slug", currentClubSlug);
+  await supabase.from("market_players").delete().eq("career_id", careerId).eq("current_club", targetClub.name);
+  for (const p of oldPlayers ?? []) {
+    const { data: exists } = await supabase.from("market_players").select("id").eq("career_id", careerId).eq("name", p.name).maybeSingle();
+    if (!exists) await supabase.from("market_players").insert({ career_id: careerId, user_id: userId, name: p.name, position: p.position, overall: p.overall, market_value_eur: p.market_value_eur, expected_wage_eur: p.weekly_wage_eur, region: oldClub.league, current_club: oldClub.name, age: p.age, potential: p.potential });
+  }
+  const weeklyWages = (targetPlayers ?? []).reduce((sum, p) => sum + Number(p.weekly_wage_eur ?? 0), 0);
+  const { data: firstFixture } = await supabase.from("fixtures").select("home_club, away_club").eq("career_id", careerId).eq("season", season).eq("matchday", Math.max(currentMatchday + 1, 20)).eq("is_user_match", true).maybeSingle();
+  const nextOpponent = firstFixture ? (firstFixture.home_club === targetClub.name ? firstFixture.away_club : firstFixture.home_club) : targetClub.rivals[0] ?? "Adversário";
+  const { data: updatedCareer, error } = await supabase.from("careers").update({ club_name: targetClub.name, club_slug: targetClub.slug, manager_salary_eur: targetSalary, manager_contract_until_season: season + contractYears, weekly_wages_eur: weeklyWages, cash_eur: targetClub.budgetEur, next_opponent: nextOpponent, matchday: currentMatchday >= 19 ? 20 : currentMatchday, updated_at: new Date().toISOString() }).eq("id", careerId).select().single();
+  if (error) throw error;
+  await supabase.from("manager_offers").update({ status: "rejected" }).eq("career_id", careerId).eq("season", season).eq("status", "pending").neq("club_slug", targetClubSlug);
+  await supabase.from("manager_offers").update({ status: "accepted" }).eq("career_id", careerId).eq("season", season).eq("club_slug", targetClubSlug);
+  await pushAINews({ careerId, userId, kind: "transfer", hint: "Anunciar a troca de clube do treinador e a nova fase da carreira.",
+    context: { treinador: managerName, clube_anterior: oldClub.name, novo_clube: targetClub.name, rodada: currentMatchday },
+    fallbackTitle: managerName + " assume o comando do " + targetClub.name,
+    fallbackBody: managerName + " deixa o " + oldClub.name + " e assume o " + targetClub.name + ".",
+  });
+  return updatedCareer;
+}
 /**
  * Fecha uma temporada e prepara a seguinte.
  * A evolução considera idade, potencial, minutos e média de atuação.
