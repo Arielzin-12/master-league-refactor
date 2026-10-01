@@ -259,7 +259,7 @@ export const SQUADS: Record<ClubSlug, SeedPlayer[]> = {
     p('Kaio Jorge', 'CA', 83, 22_000_000, 264_000, 23),
     p('Néiser Villarreal', 'CA', 72, 2_200_000, 56_000, 20),
     p('Chico da Costa', 'CA', 72, 1_200_000, 56_000, 30),
-  ],,
+  ],
   gremio: [
     p('Gabriel Grando','GOL',72,1_500_000,40_000,26), p('Weverton','GOL',66,700_000,30_000,38), p('Thiago Beltrame','GOL',63,100_000,20_000,22), p('Gabriel Menegon','GOL',60,50_000,20_000,17),
     p('Wagner Leonardo','ZAG',76,4_000_000,72_000,26), p('Viery','ZAG',72,3_000_000,56_000,21), p('Gustavo Martins','ZAG',73,3_000_000,56_000,23), p('Fabián Balbuena','ZAG',72,1_200_000,56_000,34), p('Kannemann','ZAG',70,400_000,40_000,35), p('Luis Eduardo','ZAG',62,50_000,20_000,18),
