@@ -70,8 +70,8 @@ function MercadoPage() {
     const rows = (data ?? []) as MarketRow[];
     setMarket(rows.map((player) => {
       const normalizedName = player.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-      if (normalizedName === "enio" && player.market_value_eur >= 100_000_000) return { ...player, market_value_eur: 800_000 };
-      if (normalizedName === "pezzella" && player.market_value_eur >= 100_000_000) return { ...player, market_value_eur: 500_000 };
+      if (normalizedName === "enio") return { ...player, market_value_eur: 800_000, overall: 77 };
+      if (normalizedName === "pezzella") return { ...player, market_value_eur: 500_000, overall: 75 };
       return player;
     }));
   };
