@@ -226,6 +226,120 @@ export async function createCareer(input: NewCareerInput) {
   return career;
 }
 
+/**
+ * Fecha uma temporada e prepara a seguinte.
+ * A evolução considera idade, potencial, minutos e média de atuação.
+ */
+export async function advanceCareerSeason(careerId: string, userId: string, clubName: string, currentSeason: number) {
+  const nextSeason = currentSeason + 1;
+
+  const { data: players, error } = await supabase
+    .from("squad_players")
+    .select("id, name, age, overall, potential, appearances, minutes, rating_sum")
+    .eq("career_id", careerId);
+
+  if (error) throw error;
+
+  for (const p of players ?? []) {
+    const age = (p.age ?? 0) + 1;
+    const overall = Number(p.overall ?? 0);
+    const potential = Math.max(overall, Number(p.potential ?? overall));
+    const appearances = Number(p.appearances ?? 0);
+    const minutes = Number(p.minutes ?? 0);
+    const ratingSum = Number(p.rating_sum ?? 0);
+    const averageRating = appearances > 0 ? ratingSum / appearances : 0;
+
+    // Mais minutos + boa média = maior chance de desenvolvimento.
+    const minutesFactor = Math.min(1, minutes / 2200);
+    const performanceBonus = averageRating >= 7.4 ? 1 : averageRating >= 6.8 ? 0.5 : averageRating > 0 && averageRating < 6.0 ? -1 : 0;
+
+    let delta = 0;
+    if (age <= 20) delta = 1 + (minutesFactor >= 0.65 ? 1 : 0) + (averageRating >= 7.2 ? 1 : 0);
+    else if (age <= 23) delta = 1 + (minutesFactor >= 0.7 ? 1 : 0) + (averageRating >= 7.3 ? 1 : 0);
+    else if (age <= 26) delta = (minutesFactor >= 0.65 && averageRating >= 7.0) ? 1 : 0;
+    else if (age <= 30) delta = performanceBonus >= 1 ? 1 : 0;
+    else if (age <= 34) delta = performanceBonus >= 1 ? 0 : -1;
+    else delta = -1 - (averageRating > 0 && averageRating < 6.2 ? 1 : 0);
+
+    // Potencial limita o crescimento dos jogadores em evolução.
+    const nextOverall = delta > 0
+      ? Math.min(potential, overall + delta)
+      : Math.max(1, overall + delta);
+
+    await supabase.from("squad_players").update({
+      age,
+      overall: nextOverall,
+      // Estatísticas de gols/cartões/minutos são da temporada e recomeçam zeradas.
+      goals: 0,
+      assists: 0,
+      appearances: 0,
+      minutes: 0,
+      motm: 0,
+      clean_sheets: 0,
+      rating_sum: 0,
+      yellow_cards_season: 0,
+      red_cards_season: 0,
+    }).eq("id", p.id);
+  }
+
+  // Jogadores disponíveis no mercado também envelhecem para a nova temporada.
+  const { data: marketPlayers } = await supabase
+    .from("market_players")
+    .select("id, age, overall, potential")
+    .eq("career_id", careerId);
+
+  for (const p of marketPlayers ?? []) {
+    const age = (p.age ?? 0) + 1;
+    const overall = Number(p.overall ?? 0);
+    const potential = Math.max(overall, Number(p.potential ?? overall));
+    let delta = 0;
+    if (age <= 23) delta = potential > overall ? 1 : 0;
+    else if (age >= 36) delta = -1;
+    const nextOverall = delta > 0 ? Math.min(potential, overall + delta) : overall + delta;
+    await supabase.from("market_players").update({ age, overall: Math.max(1, nextOverall) }).eq("id", p.id);
+  }
+
+  // Nova temporada: calendário e tabela zerados, mantendo o histórico da carreira.
+  await generateSeason({
+    careerId,
+    userId,
+    season: nextSeason,
+    userClubName: clubName,
+  });
+
+  const { data: firstFixture } = await supabase
+    .from("fixtures")
+    .select("home_club, away_club")
+    .eq("career_id", careerId)
+    .eq("season", nextSeason)
+    .eq("matchday", 1)
+    .eq("is_user_match", true)
+    .maybeSingle();
+
+  const nextOpponent = firstFixture
+    ? (firstFixture.home_club === clubName ? firstFixture.away_club : firstFixture.home_club)
+    : "Adversário";
+
+  await supabase.from("careers").update({
+    season: nextSeason,
+    matchday: 1,
+    points: 0,
+    played: 0,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    goals_for: 0,
+    goals_against: 0,
+    league_position: 1,
+    next_opponent: nextOpponent,
+    transfer_window_open: isWindowOpen(1),
+    transfer_window_closes_at: windowClosesAt(1),
+    updated_at: new Date().toISOString(),
+  }).eq("id", careerId);
+
+  return { season: nextSeason, nextOpponent };
+}
+
 export async function deleteCareer(careerId: string) {
   const { error } = await supabase.from("careers").delete().eq("id", careerId);
   if (error) throw error;
