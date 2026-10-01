@@ -15,13 +15,29 @@ interface Career { id: string; club_name: string; season: number; played: number
 function BoardPage() {
   const { careerId } = useParams({ from: "/carreira/$careerId/diretoria" });
   const { career } = useCareer();
-  const c = career as typeof career & { board_confidence?: number; fan_mood?: number; squad_morale?: number; reputation?: number; board_objective?: string; titles?: number };
+  const c = career as typeof career & { board_confidence?: number; fan_mood?: number; squad_morale?: number; reputation?: number; board_objective?: string; titles?: number; club_slug?: string };
   const [all, setAll] = useState<Career[]>([]);
 
   useEffect(() => {
     supabase.from("careers").select("id,club_name,season,played,wins,draws,losses,titles").eq("manager_name", career.manager_name)
       .then(({ data }) => setAll((data ?? []) as Career[]));
   }, [careerId, career.manager_name]);
+
+  const objectiveByClub: Record<string, string> = {
+    Palmeiras: "Disputar o título do Brasileirão",
+    Flamengo: "Disputar o título do Brasileirão",
+    Corinthians: "Garantir vaga na Libertadores",
+    "Vasco da Gama": "Terminar na primeira metade da tabela",
+    Fluminense: "Garantir vaga na Libertadores",
+    Cruzeiro: "Terminar entre os 8 primeiros",
+    Grêmio: "Evitar o rebaixamento e permanecer na Série A",
+    Santos: "Evitar o rebaixamento e permanecer na Série A",
+    Internacional: "Evitar o rebaixamento e permanecer na Série A",
+    "Real Madrid": "Disputar o título da LaLiga",
+    Barcelona: "Disputar o título da LaLiga",
+    Chelsea: "Garantir vaga na Champions League",
+  };
+  const boardObjective = c.board_objective ?? objectiveByClub[career.club_name] ?? "Cumprir as metas definidas pela diretoria";
 
   const bars = [
     ["Confiança da diretoria", c.board_confidence ?? 60],
@@ -41,7 +57,7 @@ function BoardPage() {
         <CardContent className="space-y-4">
           <div className="rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm">
             <p className="text-xs uppercase tracking-widest text-muted-foreground">Objetivo da temporada</p>
-            <p className="font-bold">{c.board_objective ?? "Informação não disponível"}</p>
+            <p className="font-bold">{boardObjective}</p>
           </div>
           {bars.map(([l, v]) => (
             <div key={l} className="space-y-1">
