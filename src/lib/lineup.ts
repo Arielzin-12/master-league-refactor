@@ -5,6 +5,7 @@ export interface SavedLineup {
   subs: { outId: string; inId: string; minute: number }[]; // plano de substituições
   opponent: string;
   home: boolean;
+  captainId?: string;
 }
 
 const key = (careerId: string) => `lineup:${careerId}`;
