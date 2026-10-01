@@ -27,7 +27,7 @@ export function windowClosesAt(matchday: number): number {
 }
 
 // =====================================================
-// Clássicos brasileiros
+// Clássicos brasileiros e internacionais
 // =====================================================
 const DERBY_PAIRS: Record<ClubSlug, string[]> = {
   palmeiras:   ["Corinthians", "São Paulo", "Santos"],
@@ -36,6 +36,12 @@ const DERBY_PAIRS: Record<ClubSlug, string[]> = {
   vasco:       ["Flamengo", "Fluminense", "Botafogo"],
   fluminense:  ["Flamengo", "Vasco", "Botafogo"],
   cruzeiro:    ["Atlético-MG", "América-MG"],
+  gremio:      ["Internacional"],
+  santos:      ["Palmeiras", "Corinthians", "São Paulo"],
+  internacional: ["Grêmio"],
+  "real-madrid": ["Barcelona"],
+  barcelona:   ["Real Madrid"],
+  chelsea:     ["Arsenal", "Tottenham", "Fulham"],
 };
 
 const DERBY_NAMES: Record<string, string> = {
@@ -56,6 +62,14 @@ const DERBY_NAMES: Record<string, string> = {
   "fluminense|Botafogo": "Clássico Vovô",
   "cruzeiro|Atlético-MG": "Clássico Mineiro",
   "cruzeiro|América-MG": "Clássico das Multidões",
+  "gremio|Internacional": "Grenal",
+  "santos|São Paulo": "San-São",
+  "internacional|Grêmio": "Grenal",
+  "real-madrid|Barcelona": "El Clásico",
+  "barcelona|Real Madrid": "El Clásico",
+  "chelsea|Arsenal": "Clássico de Londres",
+  "chelsea|Tottenham": "Clássico de Londres",
+  "chelsea|Fulham": "Derby do Oeste de Londres",
 };
 
 export function isDerby(clubSlug: ClubSlug, opponent: string): boolean {
