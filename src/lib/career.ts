@@ -18,6 +18,22 @@ export async function createCareer(input: NewCareerInput) {
   const squad = SQUADS[input.clubSlug];
 
   const weekly = squad.reduce((acc, p) => acc + p.weeklyWage, 0);
+  const boardObjectives: Record<ClubSlug, string> = {
+    palmeiras: "Disputar o título do Brasileirão",
+    flamengo: "Disputar o título do Brasileirão",
+    corinthians: "Garantir vaga na Libertadores",
+    vasco: "Terminar na primeira metade da tabela",
+    fluminense: "Garantir vaga na Libertadores",
+    cruzeiro: "Terminar entre os 8 primeiros",
+    gremio: "Evitar o rebaixamento e permanecer na Série A",
+    santos: "Evitar o rebaixamento e permanecer na Série A",
+    internacional: "Evitar o rebaixamento e permanecer na Série A",
+    "real-madrid": "Disputar o título da LaLiga",
+    barcelona: "Disputar o título da LaLiga",
+    chelsea: "Garantir vaga na Champions League",
+  };
+  const boardObjective = boardObjectives[input.clubSlug];
+
 
   const { data: career, error: careerErr } = await supabase
     .from("careers")
@@ -31,6 +47,7 @@ export async function createCareer(input: NewCareerInput) {
       next_opponent: club.rivals[0] ?? "Adversário",
       transfer_window_open: isWindowOpen(1),
       transfer_window_closes_at: windowClosesAt(1),
+      board_objective: boardObjective,
     })
     .select()
     .single();
