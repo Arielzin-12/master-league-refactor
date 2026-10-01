@@ -1,7 +1,7 @@
 export interface SavedLineup {
   matchday: number;
   starters: string[];          // 11 player ids
-  bench: string[];             // até 7 reservas
+  bench: string[];             // até 10 reservas
   subs: { outId: string; inId: string; minute: number }[]; // plano de substituições
   opponent: string;
   home: boolean;
