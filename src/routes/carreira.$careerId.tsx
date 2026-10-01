@@ -22,6 +22,7 @@ function CareerLayout() {
   const location = useLocation();
   const [career, setCareer] = useState<CareerData | null>(null);
   const [fetching, setFetching] = useState(true);
+  const [showClubEntry, setShowClubEntry] = useState(false);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.from("careers").select("*").eq("id", careerId).maybeSingle();
@@ -43,12 +44,16 @@ function CareerLayout() {
 
   useEffect(() => {
     if (!user) return;
+    const shown = typeof window !== "undefined" ? window.sessionStorage.getItem("misterlab-club-entry") : null;
+    setShowClubEntry(!shown);
+    if (!shown && typeof window !== "undefined") window.sessionStorage.setItem("misterlab-club-entry", "1");
     setFetching(true);
     load().finally(() => setFetching(false));
   }, [user, load]);
 
   if (fetching || !career) {
-    return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Entrando no clube...</div>;
+    if (showClubEntry) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Entrando no clube...</div>;
+    return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Carregando...</div>;
   }
 
   const club = CLUBS[career.club_slug as ClubSlug];
