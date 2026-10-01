@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { applyPostMatch } from "@/lib/postmatch";
+import { advanceCareerSeason } from "@/lib/career";
 import { useEffect, useMemo, useState } from "react";
 import { useCareer } from "@/lib/career-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -467,6 +468,18 @@ function JogoPage() {
       updated_at: new Date().toISOString(),
     }).eq("id", career.id);
     if (cErr) { toast.error(cErr.message); setBusy(false); return; }
+
+    // Encerramento da temporada: envelhece todos os jogadores, aplica evolução
+    // baseada em potencial/idade/desempenho e abre uma nova temporada.
+    if (career.matchday === 38) {
+      try {
+        await advanceCareerSeason(career.id, career.user_id, club.name, career.season);
+        toast.success(`Temporada ${career.season} encerrada. Elenco atualizado para a nova temporada.`);
+      } catch (e) {
+        console.error("season progression", e);
+        toast.error("A temporada terminou, mas houve um erro ao preparar a próxima.");
+      }
+    }
 
     // Notícia rica e detalhada
     const localStr = home ? "em casa" : "como visitante";
