@@ -95,6 +95,7 @@ function JogoPage() {
   const [busy, setBusy] = useState(false);
   const [motmId, setMotmId] = useState("");
   const [notes, setNotes] = useState("");
+  const [defensiveNotes, setDefensiveNotes] = useState("");
 
   const draftKey = `match-draft:${careerId}`;
   const [draftRestored, setDraftRestored] = useState(false);
@@ -119,6 +120,7 @@ function JogoPage() {
         if (d.position !== undefined) setPosition(d.position);
         if (d.motmId) setMotmId(d.motmId);
         if (d.notes) setNotes(d.notes);
+        if (d.defensiveNotes) setDefensiveNotes(d.defensiveNotes);
       }
     } catch {}
     setDraftRestored(true);
@@ -128,9 +130,9 @@ function JogoPage() {
     if (!draftRestored || typeof window === "undefined") return;
     window.localStorage.setItem(draftKey, JSON.stringify({
       gf, ga, goals, assists, yellow, red, liveSubs, subOutId, subInId, subMinute,
-      activeStat, position, motmId, notes, savedAt: Date.now(),
+      activeStat, position, motmId, notes, defensiveNotes, savedAt: Date.now(),
     }));
-  }, [draftRestored, draftKey, gf, ga, goals, assists, yellow, red, liveSubs, subOutId, subInId, subMinute, activeStat, position, motmId, notes]);
+  }, [draftRestored, draftKey, gf, ga, goals, assists, yellow, red, liveSubs, subOutId, subInId, subMinute, activeStat, position, motmId, notes, defensiveNotes]);
 
   useEffect(() => {
     (async () => {
@@ -330,7 +332,7 @@ function JogoPage() {
       result: realResult,
       competition: "Brasileirão",
       motm_player_id: motmId || null,
-      notes: notes.trim() || null,
+      notes: [notes.trim(), defensiveNotes.trim() ? `Atuação defensiva: ${defensiveNotes.trim()}` : ""].filter(Boolean).join("\n") || null,
     });
     if (matchErr) { toast.error(matchErr.message); setBusy(false); return; }
 
@@ -511,7 +513,7 @@ function JogoPage() {
         }).join(" • ")}`
       : "";
 
-    const detailedBody = [
+    const defensiveBlock = defensiveNotes.trim()\n      ? `🛡️ **Atuação defensiva:** ${defensiveNotes.trim()}`\n      : "🛡️ **Atuação defensiva:** Nenhum destaque defensivo registrado.";\n\n    const detailedBody = [
       `**${club.name} ${gf} x ${ga} ${opponent.trim()}** — Rodada ${career.matchday} (${home ? "Casa" : "Fora"}).`,
       "",
       xgStr,
@@ -548,7 +550,7 @@ function JogoPage() {
         mando: home ? "casa" : "fora", resultado: realResult, posicao_tabela: position,
         pontos_total: career.points + pointsDelta, rodada: career.matchday,
         derby: dName, gols: scorersStr, assistencias: assistsStr,
-        amarelos: yellowStr, vermelhos: redStr,
+        amarelos: yellowStr, vermelhos: redStr,\n        atuacao_defensiva: defensiveNotes.trim() || null,\n        clean_sheet_equipe: ga === 0,
       },
       fallbackTitle: postMatchHeadline(opponent.trim(), gf, ga, club.name, club.slug),
       fallbackBody: detailedBody,
