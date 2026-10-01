@@ -211,12 +211,15 @@ export function buildExtraMarketRows(careerId: string, userId: string, ownClub: 
 }
 
 /** Adiciona ao mercado de uma carreira existente os jogadores extras que ainda não estão lá. */
-export async function syncExtraMarket(careerId: string, userId: string, ownClub: string) {
+const synced = new Set<string>();
+export async function syncExtraMarket(careerId: string, userId: string, clubName: string, clubSlug: string) {
+  if (synced.has(careerId)) return;
+  synced.add(careerId);
   const [{ data: m }, { data: s }] = await Promise.all([
     supabase.from("market_players").select("name").eq("career_id", careerId),
-    supabase.from("squad_players").select("name").eq("career_id", careerId).eq("club_slug", ownClub),
+    supabase.from("squad_players").select("name").eq("career_id", careerId).eq("club_slug", clubSlug),
   ]);
   const skip = new Set([...(m ?? []), ...(s ?? [])].map((r) => r.name));
-  const rows = buildExtraMarketRows(careerId, userId, "", skip);
+  const rows = buildExtraMarketRows(careerId, userId, clubName, skip);
   if (rows.length) await supabase.from("market_players").insert(rows);
 }
