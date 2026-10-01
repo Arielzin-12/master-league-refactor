@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatEur } from "@/lib/format";
 import { toast } from "sonner";
-import { Heart, ShieldAlert, Stethoscope, Pencil, Plus, Sparkles, Trash2, UserRound, Wand2, Loader2 } from "lucide-react";
+import { Heart, ShieldAlert, Stethoscope, Pencil, Plus, Sparkles, Trash2, UserRound } from "lucide-react";
 import { generatePlayerStats, randomPlayerName, estimateValue } from "@/lib/players";
 import { POSITION_ORDER, POSITION_LIST, type Position } from "@/data/squads";
 
@@ -67,38 +67,6 @@ function ElencoPage() {
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [careerId, career.club_slug]);
-
-  const [generating, setGenerating] = useState<Record<string, boolean>>({});
-  const [bulkBusy, setBulkBusy] = useState(false);
-
-  const generateFace = async (playerId: string, name: string, age: number, position: string) => {
-    setGenerating((g) => ({ ...g, [playerId]: true }));
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-face", {
-        body: { playerId, name, age, position },
-      });
-      if (error) throw error;
-      if (data?.face_url) {
-        setPlayers((prev) => prev.map((p) => p.id === playerId ? { ...p, face_url: data.face_url } : p));
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao gerar face.");
-    } finally {
-      setGenerating((g) => ({ ...g, [playerId]: false }));
-    }
-  };
-
-  const generateAllFaces = async () => {
-    const targets = players.filter((p) => !p.face_url);
-    if (targets.length === 0) { toast.info("Todos os jogadores já têm face."); return; }
-    setBulkBusy(true);
-    toast.info(`Gerando ${targets.length} faces, isso pode levar alguns minutos...`);
-    for (const p of targets) {
-      await generateFace(p.id, p.name, p.age, p.position);
-    }
-    setBulkBusy(false);
-    toast.success("Faces geradas!");
-  };
 
   const sorted = useMemo(
     () => [...players].sort((a, b) => (POSITION_ORDER[a.position] ?? 9) - (POSITION_ORDER[b.position] ?? 9) || b.overall - a.overall),
@@ -196,10 +164,6 @@ function ElencoPage() {
             <CardDescription>{players.length} jogadores • Folha semanal {formatEur(totalWage)}</CardDescription>
           </div>
           <div className="flex flex-col items-end gap-2 sm:flex-row">
-            <Button size="sm" variant="secondary" onClick={generateAllFaces} disabled={bulkBusy}>
-              {bulkBusy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Wand2 className="mr-1 h-4 w-4" />}
-              Gerar faces
-            </Button>
             <CreatePlayerDialog onCreate={handleCreate} />
           </div>
         </CardHeader>
@@ -232,22 +196,11 @@ function ElencoPage() {
                       <CardContent className="flex items-center gap-4 p-4">
                         <div className="relative shrink-0">
                           {p.face_url ? (
-                            <img
-                              src={p.face_url}
-                              alt={p.name}
-                              className="h-16 w-16 rounded-xl border border-border/60 object-cover"
-                              loading="lazy"
-                            />
+                            <img src={p.face_url} alt={p.name} className="h-16 w-16 rounded-xl border border-border/60 object-cover" loading="lazy" />
                           ) : (
-                            <button
-                              type="button"
-                              onClick={() => generateFace(p.id, p.name, p.age, p.position)}
-                              disabled={!!generating[p.id] || bulkBusy}
-                              title="Gerar face com IA"
-                              className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/40 text-muted-foreground transition hover:border-primary/60 hover:text-primary disabled:cursor-not-allowed"
-                            >
-                              {generating[p.id] ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserRound className="h-6 w-6" />}
-                            </button>
+                            <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-border/60 bg-muted/40 text-muted-foreground">
+                              <UserRound className="h-6 w-6" />
+                            </div>
                           )}
                           <div className="absolute -bottom-1 -right-1 flex flex-col items-center justify-center rounded-md bg-gradient-gold px-1.5 py-0.5 text-primary-foreground shadow">
                             <span className="text-[11px] font-black leading-none">{p.overall}</span>
