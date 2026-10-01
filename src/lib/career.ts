@@ -144,6 +144,34 @@ export async function createCareer(input: NewCareerInput) {
     if (mErr) throw mErr;
   }
 
+  // Todos os jogadores dos novos clubes também entram no mercado quando
+  // ainda não estiverem cadastrados, exceto os jogadores do clube escolhido.
+  const marketNames = new Set(marketRows.map((r) => r.name));
+  const squadMarketRows = (Object.keys(SQUADS) as ClubSlug[]).flatMap((slug) => {
+    const squadClub = CLUBS[slug];
+    if (squadClub.name === ownClubName) return [];
+    return SQUADS[slug].filter((p) => !marketNames.has(p.name)).map((p) => {
+      const stats = generatePlayerStats(p.age, p.position);
+      return {
+        career_id: career.id,
+        user_id: input.userId,
+        name: p.name,
+        position: p.position,
+        overall: p.overall,
+        market_value_eur: p.marketValue,
+        expected_wage_eur: p.weeklyWage,
+        region: squadClub.league,
+        current_club: squadClub.name,
+        age: p.age,
+        potential: Math.max(p.overall, stats.potential),
+      };
+    });
+  });
+  if (squadMarketRows.length > 0) {
+    const { error: smErr } = await supabase.from("market_players").insert(squadMarketRows);
+    if (smErr) throw smErr;
+  }
+
   const extraRows = buildExtraMarketRows(career.id, input.userId, club.name, new Set([...ownedNames, ...marketRows.map((r) => r.name)]));
   if (extraRows.length > 0) {
     const { error: xErr } = await supabase.from("market_players").insert(extraRows);
