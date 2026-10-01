@@ -14,6 +14,8 @@ import { formatEur } from "@/lib/format";
 import { toast } from "sonner";
 import { Inbox, Check, X, Handshake, Heart, Gavel, AlertTriangle } from "lucide-react";
 import { pushAINews } from "@/lib/news";
+import { switchManagerClub, type ManagerOfferRow } from "@/lib/career";
+import { CLUB_LIST, type ClubSlug } from "@/data/clubs";
 
 interface IncomingRow {
   id: string;
@@ -40,16 +42,17 @@ function PropostasPage() {
   const { career, club, refresh } = useCareer();
   const { careerId } = useParams({ from: "/carreira/$careerId/propostas" });
   const [offers, setOffers] = useState<IncomingRow[]>([]);
+  const [managerOffers, setManagerOffers] = useState<ManagerOfferRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("incoming_offers")
-      .select("*")
-      .eq("career_id", careerId)
-      .order("created_at", { ascending: false });
+    const [{ data }, { data: coachData }] = await Promise.all([
+      supabase.from("incoming_offers").select("*").eq("career_id", careerId).order("created_at", { ascending: false }),
+      supabase.from("manager_offers").select("*").eq("career_id", careerId).order("created_at", { ascending: false }),
+    ]);
     setOffers((data ?? []) as IncomingRow[]);
+    setManagerOffers((coachData ?? []) as ManagerOfferRow[]);
     setLoading(false);
   };
 
@@ -181,9 +184,55 @@ function PropostasPage() {
 
   const pending = offers.filter((o) => o.status === "pending");
   const history = offers.filter((o) => o.status !== "pending");
+  const pendingManager = managerOffers.filter((o) => o.status === "pending");
+  const managerHistory = managerOffers.filter((o) => o.status !== "pending");
+
+  const acceptManagerOffer = async (offer: ManagerOfferRow, salary: number, bonus: number, years: number) => {
+    const targetSlug = offer.club_slug as ClubSlug;
+    if (!CLUB_LIST.some((c) => c.slug === targetSlug)) {
+      toast.error("Clube da proposta não está disponível nesta carreira.");
+      return;
+    }
+    try {
+      await switchManagerClub({
+        careerId: career.id, userId: career.user_id, managerName: career.manager_name,
+        currentClubSlug: career.club_slug as ClubSlug, targetClubSlug: targetSlug,
+        season: career.season, currentMatchday: career.matchday,
+        targetSalary: salary, contractYears: years,
+      });
+      await supabase.from("manager_offers").update({ status: "accepted", salary_eur: salary, bonus_eur: bonus, contract_years: years }).eq("id", offer.id);
+      toast.success("Você agora é o treinador do " + offer.club_name + "!");
+      await refresh(); await load();
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível concluir a mudança de clube.");
+    }
+  };
+
+  const rejectManagerOffer = async (offer: ManagerOfferRow) => {
+    await supabase.from("manager_offers").update({ status: "rejected" }).eq("id", offer.id);
+    await load();
+    toast.success("Proposta recusada.");
+  };
 
   return (
     <div className="space-y-6">
+      <Card className="border-primary/30 bg-card/70">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Handshake className="h-5 w-5 text-primary" /> Propostas pelo treinador</CardTitle>
+          <CardDescription>Após a rodada 19 e no fim da temporada, clubes da aba de carreiras podem tentar contratar você.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {pendingManager.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma proposta de clube no momento.</p> :
+            <div className="grid gap-3 md:grid-cols-2">{pendingManager.map((offer) =>
+              <ManagerOfferCard key={offer.id} offer={offer} onAccept={acceptManagerOffer} onReject={rejectManagerOffer} />
+            )}</div>}
+          {managerHistory.length > 0 && <div className="border-t border-border/40 pt-3 text-xs text-muted-foreground">
+            Histórico: {managerHistory.map((o) => o.club_name + " — " + (o.status === "accepted" ? "aceita" : "recusada")).join(" • ")}
+          </div>}
+        </CardContent>
+      </Card>
+
       <Card className="border-border/60 bg-card/70">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Inbox className="h-5 w-5 text-primary" /> Propostas pelos seus jogadores</CardTitle>
@@ -279,6 +328,85 @@ function OfferCard({
             <X className="mr-1 h-4 w-4" /> Recusar
           </Button>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ManagerOfferCard({
+  offer, onAccept, onReject,
+}: {
+  offer: ManagerOfferRow;
+  onAccept: (offer: ManagerOfferRow, salary: number, bonus: number, years: number) => Promise<void>;
+  onReject: (offer: ManagerOfferRow) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [salary, setSalary] = useState(offer.salary_eur);
+  const [bonus, setBonus] = useState(offer.bonus_eur);
+  const [years, setYears] = useState(offer.contract_years);
+  const [round, setRound] = useState(offer.negotiation_round || 1);
+  const [history, setHistory] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setSalary(offer.salary_eur); setBonus(offer.bonus_eur); setYears(offer.contract_years);
+      setRound(offer.negotiation_round || 1); setHistory([]);
+    }
+  }, [open, offer]);
+
+  const negotiate = async () => {
+    setBusy(true);
+    const demandedSalary = Math.max(1, salary);
+    const demandedBonus = Math.max(0, bonus);
+    const demandedYears = Math.max(1, Math.min(5, years));
+    const maxSalary = Math.round(offer.salary_eur * 1.45);
+    const maxBonus = Math.round(offer.bonus_eur * 1.8);
+    const nextSalary = Math.min(maxSalary, Math.round((offer.salary_eur + demandedSalary) / 2));
+    const nextBonus = Math.min(maxBonus, Math.round((offer.bonus_eur + demandedBonus) / 2));
+    const accepted = Math.abs(nextSalary - demandedSalary) <= Math.max(1, demandedSalary * 0.06);
+    const nextRound = round + 1;
+    setSalary(nextSalary); setBonus(nextBonus); setYears(demandedYears); setRound(nextRound);
+    setHistory((h) => [...h, accepted
+      ? "O " + offer.club_name + " chegou a termos próximos do seu pedido."
+      : "O " + offer.club_name + " melhorou a proposta para " + formatEur(nextSalary) + "/sem + " + formatEur(nextBonus) + " de bônus."]);
+    await supabase.from("manager_offers").update({ salary_eur: nextSalary, bonus_eur: nextBonus, contract_years: demandedYears, negotiation_round: nextRound }).eq("id", offer.id);
+    setBusy(false);
+  };
+
+  return (
+    <Card className="border-border/50 bg-background/30">
+      <CardContent className="space-y-3 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">{offer.phase === "midseason" ? "Após rodada 19" : "Fim da temporada"}</p>
+            <p className="text-lg font-black">{offer.club_name}</p>
+            <p className="text-xs text-muted-foreground">Interesse no treinador: {offer.interest}%</p>
+          </div>
+          <Badge variant="secondary">Proposta</Badge>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <Stat label="Salário" value={formatEur(salary) + "/sem"} />
+          <Stat label="Bônus" value={formatEur(bonus)} />
+          <Stat label="Contrato" value={years + " anos"} />
+        </div>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild><Button className="w-full"><Handshake className="mr-2 h-4 w-4" /> Negociar proposta</Button></DialogTrigger>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader><DialogTitle>Contrato com o {offer.club_name}</DialogTitle><DialogDescription>Negocie salário, bônus e duração antes de decidir.</DialogDescription></DialogHeader>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Salário pedido (€ / semana)</Label><Input type="number" value={salary} onChange={(e) => setSalary(Number(e.target.value) || 0)} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Bônus (€)</Label><Input type="number" value={bonus} onChange={(e) => setBonus(Number(e.target.value) || 0)} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Duração (anos)</Label><Input type="number" min={1} max={5} value={years} onChange={(e) => setYears(Math.max(1, Math.min(5, Number(e.target.value) || 1)))} /></div>
+            </div>
+            {history.length > 0 && <div className="space-y-1 text-xs rounded border border-border/40 bg-background/30 p-3">{history.map((h, i) => <p key={i}>{h}</p>)}</div>}
+            <DialogFooter className="flex-col gap-2 sm:flex-col">
+              <Button onClick={negotiate} disabled={busy || round > 3}>{busy ? "Negociando..." : "Enviar contraproposta (" + round + "/3)"}</Button>
+              <Button onClick={async () => { setBusy(true); await onAccept(offer, salary, bonus, years); setBusy(false); setOpen(false); }} disabled={busy}>Aceitar e assumir o clube</Button>
+              <Button variant="ghost" onClick={async () => { setBusy(true); await onReject(offer); setBusy(false); setOpen(false); }}>Recusar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
