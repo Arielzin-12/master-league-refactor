@@ -486,6 +486,9 @@ function JogoPage() {
     if (yellowStr) cardsLines.push(`🟨 **Amarelos:** ${yellowStr}`);
     if (redStr)    cardsLines.push(`🟥 **Vermelhos:** ${redStr}`);
     const cardsBlock = cardsLines.length ? cardsLines.join("\n") : "🟨 **Cartões:** Partida sem cartões relevantes.";
+    const defensiveBlock = defensiveNotes.trim()
+      ? `🛡️ **Atuação defensiva:** ${defensiveNotes.trim()}`
+      : "🛡️ **Atuação defensiva:** Nenhum destaque defensivo registrado.";
 
     const fan = fanReaction(gf, ga, derby);
     const bonusLine = bonus > 0
@@ -521,6 +524,7 @@ function JogoPage() {
       scorersBlock,
       assistsBlock,
       cardsBlock,
+      defensiveBlock,
       "",
       `📊 **Posição na tabela após o jogo:** ${position}º com ${career.points + pointsDelta} pontos em ${career.played + 1} jogos.`,
       `${fan}${bonusLine}${liveSubsLine}${subsLine}${derbyLine}`,
@@ -550,7 +554,9 @@ function JogoPage() {
         mando: home ? "casa" : "fora", resultado: realResult, posicao_tabela: position,
         pontos_total: career.points + pointsDelta, rodada: career.matchday,
         derby: dName, gols: scorersStr, assistencias: assistsStr,
-        amarelos: yellowStr, vermelhos: redStr,\n        atuacao_defensiva: defensiveNotes.trim() || null,\n        clean_sheet_equipe: ga === 0,
+        amarelos: yellowStr, vermelhos: redStr,
+        atuacao_defensiva: defensiveNotes.trim() || null,
+        clean_sheet_equipe: ga === 0,\n        atuacao_defensiva: defensiveNotes.trim() || null,\n        clean_sheet_equipe: ga === 0,
       },
       fallbackTitle: postMatchHeadline(opponent.trim(), gf, ga, club.name, club.slug),
       fallbackBody: detailedBody,
