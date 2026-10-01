@@ -54,7 +54,7 @@ function EscalacaoPage() {
       const validIds = new Set(rows.map((p) => p.id));
       if (saved) {
         setStarters(new Set(saved.starters.filter((id) => validIds.has(id)).slice(0, 11)));
-        setBench(new Set(saved.bench.filter((id) => validIds.has(id)).slice(0, 7)));
+        setBench(new Set(saved.bench.filter((id) => validIds.has(id)).slice(0, 10)));
         setOpponent(saved.opponent || career.next_opponent || club.rivals[0] || "Adversário");
         setHome(saved.home ?? true);
         if (saved.captainId && validIds.has(saved.captainId) && saved.starters.includes(saved.captainId)) setCaptainId(saved.captainId);
@@ -116,8 +116,8 @@ function EscalacaoPage() {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
-      } else if (next.size >= 7) {
-        toast.error("Máximo de 7 reservas.");
+      } else if (next.size >= 10) {
+        toast.error("Máximo de 10 reservas.");
         return prev;
       } else {
         next.add(id);
@@ -218,7 +218,7 @@ function EscalacaoPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Elenco</CardTitle>
             <CardDescription>
-              Titulares: {starters.size}/11 • Reservas: {bench.size}/7
+              Titulares: {starters.size}/11 • Reservas: {bench.size}/10
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -314,7 +314,7 @@ function EscalacaoPage() {
             </div>
             {benchList.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Banco ({benchList.length}/7)</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Banco ({benchList.length}/10</p>
                 <div className="space-y-1">
                   {benchList.map((p) => (
                     <div key={p.id} className="flex items-center gap-2 rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-1.5 text-sm">
