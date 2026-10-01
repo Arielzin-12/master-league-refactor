@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { applyPostMatch } from "@/lib/postmatch";
-import { advanceCareerSeason } from "@/lib/career";
+import { advanceCareerSeason, generateManagerOffers } from "@/lib/career";
 import { useEffect, useMemo, useState } from "react";
 import { useCareer } from "@/lib/career-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -468,6 +468,24 @@ function JogoPage() {
       updated_at: new Date().toISOString(),
     }).eq("id", career.id);
     if (cErr) { toast.error(cErr.message); setBusy(false); return; }
+
+    // Mercado de treinadores: propostas aparecem após a 19ª e a 38ª rodada.
+    if (career.matchday === 19 || career.matchday === 38) {
+      try {
+        await generateManagerOffers({
+          careerId: career.id,
+          userId: career.user_id,
+          currentClubSlug: career.club_slug,
+          currentSeason: career.season,
+          matchday: career.matchday,
+          leaguePosition: finalPosition ?? career.league_position,
+          phase: career.matchday === 19 ? "midseason" : "endseason",
+        });
+        toast.success(career.matchday === 19 ? "O mercado de treinadores se movimentou: novas propostas chegaram." : "A temporada terminou e novas propostas de clubes chegaram.");
+      } catch (e) {
+        console.error("manager offers", e);
+      }
+    }
 
     // Encerramento da temporada: envelhece todos os jogadores, aplica evolução
     // baseada em potencial/idade/desempenho e abre uma nova temporada.
