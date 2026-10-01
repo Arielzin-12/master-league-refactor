@@ -328,6 +328,22 @@ function EscalacaoPage() {
             )}
 
             <div className="flex flex-col gap-2 pt-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" onClick={() => {
+                  saveLineup(careerId, { matchday: career.matchday, starters: Array.from(starters), bench: Array.from(bench), subs: [], opponent: opponent.trim(), home, captainId: captainId || undefined });
+                  toast.success("Escalação salva.");
+                }}>Salvar escalação</Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const saved = loadLineup(careerId);
+                  if (!saved) { toast.error("Nenhuma escalação salva encontrada."); return; }
+                  const validIds = new Set(players.map((p) => p.id));
+                  const nextStarters = new Set(saved.starters.filter((id) => validIds.has(id)).slice(0, 11));
+                  const nextBench = new Set(saved.bench.filter((id) => validIds.has(id) && !nextStarters.has(id)).slice(0, 7));
+                  setStarters(nextStarters); setBench(nextBench); setOpponent(saved.opponent || "Adversário"); setHome(saved.home ?? true);
+                  setCaptainId(saved.captainId && nextStarters.has(saved.captainId) ? saved.captainId : "");
+                  toast.success("Escalação carregada.");
+                }}>Carregar salva</Button>
+              </div>
               <Button onClick={proceed} size="lg" className="w-full">
                 Confirmar escalação e ir ao jogo <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
