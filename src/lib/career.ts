@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CLUBS, type ClubSlug } from "@/data/clubs";
-import { SQUADS, MARKET_SEED } from "@/data/squads";
+import { SQUADS, MARKET_SEED, ovrFromValue, wageFromValue } from "@/data/squads";
+import { EXTRA_MARKET } from "@/data/market-extra";
 import { generatePlayerStats } from "@/lib/players";
 import { isWindowOpen, windowClosesAt } from "@/lib/season";
 import { pushAINews } from "@/lib/news";
@@ -143,6 +144,12 @@ export async function createCareer(input: NewCareerInput) {
     if (mErr) throw mErr;
   }
 
+  const extraRows = buildExtraMarketRows(career.id, input.userId, club.name, new Set([...ownedNames, ...marketRows.map((r) => r.name)]));
+  if (extraRows.length > 0) {
+    const { error: xErr } = await supabase.from("market_players").insert(extraRows);
+    if (xErr) throw xErr;
+  }
+
   // Notícias iniciais (geradas por IA com fallback)
   await Promise.all([
     pushAINews({
@@ -177,4 +184,42 @@ export async function createCareer(input: NewCareerInput) {
 export async function deleteCareer(careerId: string) {
   const { error } = await supabase.from("careers").delete().eq("id", careerId);
   if (error) throw error;
+}
+
+/** Jogadores extras do mercado (lista do usuário). Idade não informada: usa 25 como nos demais. */
+export function buildExtraMarketRows(careerId: string, userId: string, ownClub: string, skipNames: Set<string>) {
+  return EXTRA_MARKET.filter((p) => p.club !== ownClub && !skipNames.has(p.name)).map((p) => {
+    const age = 25;
+    const overall = ovrFromValue(p.value, age);
+    return {
+      career_id: careerId,
+      user_id: userId,
+      name: p.name,
+      position: p.position,
+      overall,
+      market_value_eur: p.value,
+      expected_wage_eur: wageFromValue(p.value, overall),
+      region: p.league,
+      league: p.league,
+      nationality: p.nationality,
+      traits: p.traits,
+      current_club: p.club,
+      age,
+      potential: overall,
+    };
+  });
+}
+
+/** Adiciona ao mercado de uma carreira existente os jogadores extras que ainda não estão lá. */
+const synced = new Set<string>();
+export async function syncExtraMarket(careerId: string, userId: string, clubName: string, clubSlug: string) {
+  if (synced.has(careerId)) return;
+  synced.add(careerId);
+  const [{ data: m }, { data: s }] = await Promise.all([
+    supabase.from("market_players").select("name").eq("career_id", careerId),
+    supabase.from("squad_players").select("name").eq("career_id", careerId).eq("club_slug", clubSlug),
+  ]);
+  const skip = new Set([...(m ?? []), ...(s ?? [])].map((r) => r.name));
+  const rows = buildExtraMarketRows(careerId, userId, clubName, skip);
+  if (rows.length) await supabase.from("market_players").insert(rows);
 }

@@ -6,8 +6,9 @@ import { CLUBS, type ClubSlug } from "@/data/clubs";
 import { CareerContext, type CareerData } from "@/lib/career-context";
 import { Button } from "@/components/ui/button";
 import { formatEur } from "@/lib/format";
-import { ArrowLeft, Home, Users, ClipboardList, Newspaper, Store, Trophy, Inbox, CalendarClock, ThermometerSun, ListChecks } from "lucide-react";
+import { ArrowLeft, Home, Users, ClipboardList, Newspaper, Store, Trophy, Inbox, CalendarClock, ThermometerSun, ListChecks, BarChart3, HeartPulse, Wallet, Landmark, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import { syncExtraMarket } from "@/lib/career";
 import { nextWindowChange, windowClosesAt } from "@/lib/season";
 
 export const Route = createFileRoute("/carreira/$careerId")({
@@ -33,6 +34,7 @@ function CareerLayout() {
       return;
     }
     setCareer(data as CareerData);
+    void syncExtraMarket(data.id, data.user_id, data.club_name, data.club_slug).catch(() => {});
   }, [careerId, navigate]);
 
   useEffect(() => {
@@ -61,7 +63,12 @@ function CareerLayout() {
       | "/carreira/$careerId/propostas"
       | "/carreira/$careerId/tabela"
       | "/carreira/$careerId/clima"
-      | "/carreira/$careerId/noticias";
+      | "/carreira/$careerId/noticias"
+      | "/carreira/$careerId/estatisticas"
+      | "/carreira/$careerId/medico"
+      | "/carreira/$careerId/financas"
+      | "/carreira/$careerId/diretoria"
+      | "/carreira/$careerId/social";
     label: string;
     icon: typeof Home;
     exact?: boolean;
@@ -75,6 +82,11 @@ function CareerLayout() {
     { to: "/carreira/$careerId/propostas", label: "Propostas", icon: Inbox },
     { to: "/carreira/$careerId/tabela", label: "Tabela", icon: Trophy },
     { to: "/carreira/$careerId/noticias", label: "Notícias", icon: Newspaper },
+    { to: "/carreira/$careerId/social", label: "Social", icon: MessageCircle },
+    { to: "/carreira/$careerId/estatisticas", label: "Estatísticas", icon: BarChart3 },
+    { to: "/carreira/$careerId/medico", label: "Médico", icon: HeartPulse },
+    { to: "/carreira/$careerId/financas", label: "Finanças", icon: Wallet },
+    { to: "/carreira/$careerId/diretoria", label: "Diretoria", icon: Landmark },
   ];
 
   return (
