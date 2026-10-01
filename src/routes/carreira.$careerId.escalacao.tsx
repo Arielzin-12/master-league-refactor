@@ -55,8 +55,6 @@ function EscalacaoPage() {
       if (saved) {
         setStarters(new Set(saved.starters.filter((id) => validIds.has(id)).slice(0, 11)));
         setBench(new Set(saved.bench.filter((id) => validIds.has(id)).slice(0, 10)));
-        setOpponent(saved.opponent || career.next_opponent || club.rivals[0] || "Adversário");
-        setHome(saved.home ?? true);
         if (saved.captainId && validIds.has(saved.captainId) && saved.starters.includes(saved.captainId)) setCaptainId(saved.captainId);
         else if (cap) setCaptainId(cap.id);
       } else if (cap) setCaptainId(cap.id);
@@ -339,7 +337,7 @@ function EscalacaoPage() {
                   const validIds = new Set(players.map((p) => p.id));
                   const nextStarters = new Set(saved.starters.filter((id) => validIds.has(id)).slice(0, 11));
                   const nextBench = new Set(saved.bench.filter((id) => validIds.has(id) && !nextStarters.has(id)).slice(0, 7));
-                  setStarters(nextStarters); setBench(nextBench); setOpponent(saved.opponent || "Adversário"); setHome(saved.home ?? true);
+                  setStarters(nextStarters); setBench(nextBench);
                   setCaptainId(saved.captainId && nextStarters.has(saved.captainId) ? saved.captainId : "");
                   toast.success("Escalação carregada.");
                 }}>Carregar salva</Button>
