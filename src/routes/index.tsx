@@ -76,6 +76,11 @@ function AuthCard() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetStep, setResetStep] = useState<"email" | "code">("email");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +108,64 @@ function AuthCard() {
     else toast.success("Conta criada. Já pode entrar.");
   };
 
+  const handleRequestPasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setResetStep("code");
+    toast.success("Enviamos um código de recuperação para seu e-mail.");
+  };
+
+  const handleConfirmPasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmNewPassword) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("A nova senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    setBusy(true);
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: resetCode,
+      type: "recovery",
+    });
+
+    if (verifyError) {
+      setBusy(false);
+      toast.error("Código inválido ou expirado.");
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    setBusy(false);
+
+    if (updateError) {
+      toast.error(updateError.message);
+      return;
+    }
+
+    toast.success("Senha alterada com sucesso!");
+    setForgotPassword(false);
+    setResetStep("email");
+    setResetCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    await supabase.auth.signOut();
+  };
+
   const handleGoogle = async () => {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google");
@@ -117,6 +180,103 @@ function AuthCard() {
         <CardDescription>Acesse sua carreira ou crie uma nova.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {forgotPassword ? (
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium">Recuperar senha</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {resetStep === "email"
+                  ? "Digite seu e-mail e enviaremos um código de recuperação."
+                  : "Digite o código recebido no e-mail e escolha uma nova senha."}
+              </p>
+            </div>
+
+            {resetStep === "email" ? (
+              <form onSubmit={handleRequestPasswordReset} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="reset-email">E-mail</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="treinador@clube.com"
+                  />
+                </div>
+                <Button type="submit" disabled={busy} className="w-full">
+                  {busy ? "Enviando..." : "Enviar código"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    setForgotPassword(false);
+                    setResetStep("email");
+                  }}
+                  className="w-full"
+                >
+                  Voltar para entrar
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleConfirmPasswordReset} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="reset-code">Código de recuperação</Label>
+                  <Input
+                    id="reset-code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    required
+                    value={resetCode}
+                    onChange={(e) => setResetCode(e.target.value.replace(/\\D/g, "").slice(0, 6))}
+                    placeholder="123456"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="new-password">Nova senha</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    minLength={6}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirm-new-password">Confirmar nova senha</Label>
+                  <Input
+                    id="confirm-new-password"
+                    type="password"
+                    minLength={6}
+                    required
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" disabled={busy} className="w-full">
+                  {busy ? "Alterando..." : "Alterar senha"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    setResetStep("email");
+                    setResetCode("");
+                  }}
+                  className="w-full"
+                >
+                  Reenviar código
+                </Button>
+              </form>
+            )}
+          </div>
+        ) : (
+        <>
         <Tabs value={tab} onValueChange={(v) => setTab(v as "login" | "signup")}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Entrar</TabsTrigger>
@@ -133,6 +293,16 @@ function AuthCard() {
                 <Input id="login-pass" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <Button type="submit" disabled={busy} className="w-full">Entrar</Button>
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotPassword(true);
+                  setResetStep("email");
+                }}
+                className="w-full text-center text-xs font-medium text-primary hover:underline"
+              >
+                Esqueci minha senha
+              </button>
             </form>
           </TabsContent>
           <TabsContent value="signup" className="mt-4">
@@ -166,6 +336,8 @@ function AuthCard() {
         <p className="text-center text-xs text-muted-foreground">
           Ao continuar, você inicia uma carreira sua. <Link to="/" className="text-primary hover:underline">Saiba mais</Link>.
         </p>
+        </>
+        )}
       </CardContent>
     </Card>
   );
