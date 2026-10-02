@@ -35,6 +35,7 @@ function LandingPage() {
     <main className="min-h-screen">
       <section className="container mx-auto grid gap-10 px-6 py-16 lg:grid-cols-2 lg:py-24">
         <div className="flex flex-col justify-center gap-6">
+          <img src="/misterlab-logo.svg" alt="MisterLab" className="h-auto w-full max-w-[520px]" />
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
             <Sparkles className="h-3.5 w-3.5" /> Modo carreira interativo
           </div>
