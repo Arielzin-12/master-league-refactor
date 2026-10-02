@@ -301,9 +301,11 @@ function JogoPage() {
     }
 
     // Registra o resultado informado (inalterado) e simula os outros jogos da rodada.
-    let finalPosition = position;
+    // A posição informada pelo treinador é a posição oficial registrada após a partida.
+    // A tabela simulada continua sendo recalculada, mas não sobrescreve este valor.
+    let finalPosition = Math.max(1, Math.min(20, Number(position) || career.league_position || 1));
     try {
-      const { position: computed } = await resolveMatchday({
+      await resolveMatchday({
         careerId: career.id,
         userId: career.user_id,
         season: career.season,
@@ -314,7 +316,6 @@ function JogoPage() {
         goalsFor: gf,
         goalsAgainst: ga,
       });
-      if (computed) finalPosition = computed;
     } catch {
       // Se o calendário ainda não existir, mantém a posição informada.
     }
