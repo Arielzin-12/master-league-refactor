@@ -232,7 +232,9 @@ function AuthCard() {
                     id="reset-code"
                     inputMode="numeric"
                     autoComplete="one-time-code"
-                    maxLength={6}
+                    maxLength={8}
+                    minLength={6}
+                    className="text-center text-lg tracking-[0.5em]"
                     required
                     value={resetCode}
                     onChange={(e) => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
