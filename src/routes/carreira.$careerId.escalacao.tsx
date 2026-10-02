@@ -49,15 +49,10 @@ function EscalacaoPage() {
         .eq("club_slug", career.club_slug);
       const rows = (data ?? []) as SquadRow[];
       setPlayers(rows);
+      // A escalação salva não é carregada automaticamente.
+      // O usuário deve clicar em "Carregar salva" para reutilizá-la.
       const cap = rows.find((p) => p.is_captain);
-      const saved = loadLineup(careerId);
-      const validIds = new Set(rows.map((p) => p.id));
-      if (saved) {
-        setStarters(new Set(saved.starters.filter((id) => validIds.has(id)).slice(0, 11)));
-        setBench(new Set(saved.bench.filter((id) => validIds.has(id)).slice(0, 10)));
-        if (saved.captainId && validIds.has(saved.captainId) && saved.starters.includes(saved.captainId)) setCaptainId(saved.captainId);
-        else if (cap) setCaptainId(cap.id);
-      } else if (cap) setCaptainId(cap.id);
+      if (cap) setCaptainId(cap.id);
     })();
   }, [careerId, career.club_slug]);
 
