@@ -33,6 +33,8 @@ interface SquadRow {
   physical: number;
   technique: number;
   face_url: string | null;
+  contract_until_season: number;
+  appearances?: number;
 }
 
 const POSITIONS: Position[] = POSITION_LIST;
@@ -58,7 +60,7 @@ function ElencoPage() {
   const load = async () => {
     const { data, error } = await supabase
       .from("squad_players")
-      .select("id, name, position, overall, weekly_wage_eur, market_value_eur, morale, injured, goals, assists, age, potential, attack, defense, physical, technique, face_url")
+      .select("id, name, position, overall, weekly_wage_eur, market_value_eur, morale, injured, goals, assists, age, potential, attack, defense, physical, technique, face_url, contract_until_season, appearances")
       .eq("career_id", careerId)
       .eq("club_slug", career.club_slug);
     if (error) toast.error(error.message);
@@ -74,6 +76,52 @@ function ElencoPage() {
   );
 
   const totalWage = players.reduce((acc, p) => acc + p.weekly_wage_eur, 0);
+
+  const renewPlayer = async (player: SquadRow, years: number) => {
+    const morale = Number(player.morale ?? 70);
+    const appearances = Number(player.appearances ?? 0);
+    const matches = Math.max(1, Number(career.matchday ?? 1) - 1);
+    const usageRate = appearances / matches;
+
+    const moraleBase = morale >= 85 ? 2 : morale >= 70 ? 7 : morale >= 50 ? 15 : morale >= 30 ? 35 : 50;
+    const usageModifier = usageRate >= 0.65 ? -4 : usageRate >= 0.4 ? 0 : usageRate >= 0.2 ? 7 : 12;
+    const refusalChance = Math.max(0, Math.min(60, moraleBase + usageModifier));
+    const accepted = Math.random() * 100 >= refusalChance;
+
+    if (!accepted) {
+      await supabase.from("news_feed").insert({
+        career_id: career.id,
+        user_id: career.user_id,
+        kind: "news",
+        title: `${player.name} recusou a renovação de contrato`,
+        body: `${player.name} decidiu não aceitar a proposta de renovação neste momento.`,
+      });
+      toast.error(`${player.name} recusou a renovação.`);
+      return;
+    }
+
+    const currentEnd = Number(player.contract_until_season ?? career.season + 3);
+    const newEnd = Math.max(currentEnd, Number(career.season) + years);
+    const { error } = await supabase.from("squad_players")
+      .update({ contract_until_season: newEnd })
+      .eq("id", player.id);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    await supabase.from("news_feed").insert({
+      career_id: career.id,
+      user_id: career.user_id,
+      kind: "transfer",
+      title: `${player.name} renovou contrato com o ${career.club_name}`,
+      body: `${player.name} aceitou a renovação e seguirá no clube até a temporada ${newEnd}.`,
+    });
+
+    toast.success(`${player.name} aceitou a renovação!`);
+    await load();
+  };
 
   // Agrupa jogadores por setor para renderização em seções.
   const grouped = useMemo(() => {
@@ -219,6 +267,7 @@ function ElencoPage() {
                             <span>⚽ {p.goals}</span>
                             <span>🅰️ {p.assists}</span>
                             <span>{formatEur(p.weekly_wage_eur)}/sem</span>
+                            <span>Contrato: até T${p.contract_until_season}</span>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1.5">
@@ -226,6 +275,7 @@ function ElencoPage() {
                           <p className="font-bold">{formatEur(p.market_value_eur)}</p>
                           <div className="flex gap-1">
                             <EditPlayerDialog player={p} onEdit={handleEdit} />
+                            <RenewContractDialog player={p} currentSeason={career.season} onRenew={renewPlayer} />
                             <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(p.id, p.name, p.weekly_wage_eur)}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -255,6 +305,68 @@ interface EditPatch {
   physical: number;
   technique: number;
   weekly_wage_eur: number;
+}
+
+function RenewContractDialog({ player, currentSeason, onRenew }: { player: SquadRow; currentSeason: number; onRenew: (player: SquadRow, years: number) => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [years, setYears] = useState(2);
+  const [busy, setBusy] = useState(false);
+
+  const remaining = Math.max(0, Number(player.contract_until_season ?? currentSeason + 3) - currentSeason + 1);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="h-7 px-2 text-xs">Renovar</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Renovar contrato — {player.name}</DialogTitle>
+          <DialogDescription>
+            Sem negociação salarial. Você apenas escolhe a duração da proposta; o jogador decide se aceita.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border/40 bg-background/30 p-3">
+              <p className="text-xs text-muted-foreground">Contrato atual</p>
+              <p className="mt-1 font-bold">{remaining} temporada(s) restante(s)</p>
+            </div>
+            <div className="rounded-lg border border-border/40 bg-background/30 p-3">
+              <p className="text-xs text-muted-foreground">Clima do jogador</p>
+              <p className="mt-1 font-bold">{player.morale >= 85 ? "Empolgado" : player.morale >= 70 ? "Feliz" : player.morale >= 50 ? "Neutro" : player.morale >= 30 ? "Insatisfeito" : "Muito insatisfeito"}</p>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Duração oferecida</Label>
+            <Select value={String(years)} onValueChange={(v) => setYears(Number(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[1,2,3,4,5].map((value) => <SelectItem key={value} value={String(value)}>{value} {value === 1 ? "temporada" : "temporadas"}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            A decisão considera o clima no elenco e o quanto o jogador vem atuando. A chance exata de recusa não é mostrada.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button
+            className="w-full"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              await onRenew(player, years);
+              setBusy(false);
+              setOpen(false);
+            }}
+          >
+            {busy ? "Negociando..." : "Enviar proposta de renovação"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function EditPlayerDialog({ player, onEdit }: { player: SquadRow; onEdit: (id: string, patch: EditPatch) => Promise<void> }) {
