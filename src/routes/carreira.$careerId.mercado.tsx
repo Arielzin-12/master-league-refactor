@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Handshake, Store, Lock, Search, X, ShoppingCart, Repeat, Gavel, AlertTriangle } from "lucide-react";
 import React from "react";
 import { nextWindowChange, windowClosesAt } from "@/lib/season";
+import { syncExtraMarket } from "@/lib/career";
 
 interface MarketRow {
   id: string;
@@ -62,6 +63,7 @@ function MercadoPage() {
   const [posFilter, setPosFilter] = useState<string>("ALL");
 
   const load = async () => {
+    await syncExtraMarket(careerId, career.user_id, club.name, career.club_slug);
     const { data } = await supabase
       .from("market_players")
       .select("id, name, position, overall, market_value_eur, expected_wage_eur, region, current_club")
