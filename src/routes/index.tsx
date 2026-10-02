@@ -35,17 +35,9 @@ function LandingPage() {
     <main className="min-h-screen">
       <section className="container mx-auto grid gap-10 px-6 py-16 lg:grid-cols-2 lg:py-24">
         <div className="flex flex-col justify-center gap-6">
-          <div className="flex items-center gap-5">
-            <img
-              src="/favicon.svg"
-              alt=""
-              aria-hidden="true"
-              className="h-24 w-24 shrink-0 rounded-[22px] shadow-lg md:h-28 md:w-28"
-            />
-            <div className="flex items-baseline whitespace-nowrap">
-              <span className="text-5xl font-black tracking-[-0.045em] text-foreground md:text-6xl">Mister</span>
-              <span className="text-5xl font-black tracking-[-0.045em] text-primary md:text-6xl">Lab</span>
-            </div>
+          <div className="flex items-baseline whitespace-nowrap">
+            <span className="text-5xl font-black tracking-[-0.045em] text-foreground md:text-6xl">Mister</span>
+            <span className="text-5xl font-black tracking-[-0.045em] text-primary md:text-6xl">Lab</span>
           </div>
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
             <Sparkles className="h-3.5 w-3.5" /> Modo carreira interativo
