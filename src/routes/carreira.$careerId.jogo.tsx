@@ -476,7 +476,7 @@ function JogoPage() {
         await generateManagerOffers({
           careerId: career.id,
           userId: career.user_id,
-          currentClubSlug: career.club_slug,
+          currentClubSlug: career.club_slug as ClubSlug,
           currentSeason: career.season,
           matchday: career.matchday,
           leaguePosition: finalPosition ?? career.league_position,

@@ -30,7 +30,9 @@ export type Database = {
           intro_done: boolean
           league_position: number
           losses: number
+          manager_contract_until_season: number
           manager_name: string
+          manager_salary_eur: number
           matchday: number
           next_opponent: string | null
           played: number
@@ -64,7 +66,9 @@ export type Database = {
           intro_done?: boolean
           league_position?: number
           losses?: number
+          manager_contract_until_season?: number
           manager_name: string
+          manager_salary_eur?: number
           matchday?: number
           next_opponent?: string | null
           played?: number
@@ -98,7 +102,9 @@ export type Database = {
           intro_done?: boolean
           league_position?: number
           losses?: number
+          manager_contract_until_season?: number
           manager_name?: string
+          manager_salary_eur?: number
           matchday?: number
           next_opponent?: string | null
           played?: number
@@ -391,6 +397,68 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manager_offers: {
+        Row: {
+          bonus_eur: number
+          career_id: string
+          club_name: string
+          club_slug: string
+          contract_years: number
+          created_at: string
+          id: string
+          interest: number
+          matchday: number
+          negotiation_round: number
+          phase: string
+          salary_eur: number
+          season: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          bonus_eur?: number
+          career_id: string
+          club_name: string
+          club_slug: string
+          contract_years?: number
+          created_at?: string
+          id?: string
+          interest?: number
+          matchday?: number
+          negotiation_round?: number
+          phase?: string
+          salary_eur?: number
+          season: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          bonus_eur?: number
+          career_id?: string
+          club_name?: string
+          club_slug?: string
+          contract_years?: number
+          created_at?: string
+          id?: string
+          interest?: number
+          matchday?: number
+          negotiation_round?: number
+          phase?: string
+          salary_eur?: number
+          season?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_offers_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
             referencedColumns: ["id"]
           },
         ]

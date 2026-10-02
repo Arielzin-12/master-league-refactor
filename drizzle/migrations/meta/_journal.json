@@ -22,6 +22,13 @@
       "when": 1790642912659,
       "tag": "0002_standings_unique_index",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790943241093,
+      "tag": "0003_manager_offers",
+      "breakpoints": true
     }
   ]
 }
