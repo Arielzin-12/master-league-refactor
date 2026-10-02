@@ -68,7 +68,38 @@ function ElencoPage() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [careerId, career.club_slug]);
+  useEffect(() => {
+    load();
+    /* eslint-disable-next-line */
+  }, [careerId, career.club_slug]);
+
+  // Jogadores cujo contrato terminou deixam automaticamente o elenco.
+  // A remoção acontece no início da temporada (ou ao abrir o elenco), garantindo
+  // que um contrato expirado nunca permaneça disponível indefinidamente.
+  const removeExpiredContracts = async () => {
+    const expired = players.filter((p) => Number(p.contract_until_season ?? 9999) < Number(career.season));
+    if (!expired.length) return;
+    for (const player of expired) {
+      await supabase.from("squad_players").delete().eq("id", player.id);
+      await supabase.from("news_feed").insert({
+        career_id: career.id,
+        user_id: career.user_id,
+        kind: "news",
+        title: `${player.name} deixa o clube após o fim do contrato`,
+        body: `${player.name} não possui mais vínculo com o clube e deixou o elenco.`,
+      });
+    }
+    setPlayers((current) => current.filter((p) => !expired.some((e) => e.id === p.id)));
+    if (expired.length) {
+      toast.info(`${expired.length} contrato(s) encerrado(s) e jogador(es) removido(s) do elenco.`);
+      await refresh();
+    }
+  };
+
+  useEffect(() => {
+    if (!loading && players.length) void removeExpiredContracts();
+    /* eslint-disable-next-line */
+  }, [loading, career.season]);
 
   const sorted = useMemo(
     () => [...players].sort((a, b) => (POSITION_ORDER[a.position] ?? 9) - (POSITION_ORDER[b.position] ?? 9) || b.overall - a.overall),
