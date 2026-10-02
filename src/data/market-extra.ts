@@ -5,6 +5,18 @@ export interface ExtraMarketPlayer { name: string; position: Position; value: nu
 
 export const EXTRA_MARKET: ExtraMarketPlayer[] = [
  {
+  "name": "José Aldo",
+  "position": "MCT",
+  "value": 1500000,
+  "club": "Mirassol",
+  "nationality": "Brasil",
+  "traits": "Creative Playmaker",
+  "league": "Brasileirão",
+  "age": 27,
+  "overall": 75,
+  "expectedWage": 18000
+ },
+ {
   "name": "Micael",
   "position": "ZAG",
   "value": 4000000,
