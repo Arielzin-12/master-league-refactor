@@ -41,7 +41,7 @@ function TabelaPage() {
 
   useEffect(() => {
     (async () => {
-      const [m, s, f] = await Promise.all([
+      const [m, f] = await Promise.all([
         supabase
           .from("matches")
           .select("id, matchday, opponent, goals_for, goals_against, result, league_position_after")

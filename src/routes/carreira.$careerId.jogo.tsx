@@ -1,3 +1,4 @@
+import type { ClubSlug } from "@/data/clubs";
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { applyPostMatch } from "@/lib/postmatch";
 import { advanceCareerSeason, generateManagerOffers } from "@/lib/career";
@@ -476,7 +477,7 @@ function JogoPage() {
         await generateManagerOffers({
           careerId: career.id,
           userId: career.user_id,
-          currentClubSlug: career.club_slug,
+          currentClubSlug: career.club_slug as ClubSlug,
           currentSeason: career.season,
           matchday: career.matchday,
           leaguePosition: finalPosition ?? career.league_position,
