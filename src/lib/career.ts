@@ -450,8 +450,8 @@ export async function deleteCareer(careerId: string) {
 /** Jogadores extras do mercado (lista do usuário). Idade não informada: usa 25 como nos demais. */
 export function buildExtraMarketRows(careerId: string, userId: string, ownClub: string, skipNames: Set<string>) {
   return EXTRA_MARKET.filter((p) => p.club !== ownClub && !skipNames.has(p.name)).map((p) => {
-    const age = 25;
-    const overall = ovrFromValue(p.value, age);
+    const age = p.age ?? 25;
+    const overall = p.overall ?? ovrFromValue(p.value, age);
     return {
       career_id: careerId,
       user_id: userId,
@@ -459,7 +459,7 @@ export function buildExtraMarketRows(careerId: string, userId: string, ownClub: 
       position: p.position,
       overall,
       market_value_eur: p.value,
-      expected_wage_eur: wageFromValue(p.value, overall),
+      expected_wage_eur: p.expectedWage ?? wageFromValue(p.value, overall),
       region: p.league,
       league: p.league,
       nationality: p.nationality,
