@@ -20,8 +20,9 @@ import { resolveMatchday } from "@/lib/fixtures";
 import { loadLineup, type SavedLineup } from "@/lib/lineup";
 import { POSITION_ORDER, normalizePosition } from "@/data/squads";
 import { toast } from "sonner";
-import { Trophy, ChevronRight, Goal, HandHelping, Square, Plus, Minus, ArrowRightLeft, Flame, ClipboardList, Trash2 } from "lucide-react";
+import { Trophy, ChevronRight, Goal, HandHelping, Square, Plus, Minus, ArrowRightLeft, Flame, ClipboardList, Trash2, Shield } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { victoryBonus, buildIncomingOffers } from "@/lib/players";
 import { pushAINews } from "@/lib/news";
 
@@ -41,13 +42,16 @@ interface SquadRow {
   is_captain: boolean;
 }
 
-type StatKey = "goals" | "assists" | "yellow" | "red";
+type StatKey = "goals" | "assists" | "yellow" | "red" | "defensive";
+
+type GoalDetail = { playerId: string; minute: number; description: string };
 
 const STAT_META: Record<StatKey, { label: string; icon: typeof Goal; color: string; bg: string }> = {
   goals:   { label: "Gols",         icon: Goal,         color: "text-emerald-300", bg: "bg-emerald-500/15 border-emerald-500/40" },
   assists: { label: "Assistências", icon: HandHelping,  color: "text-sky-300",     bg: "bg-sky-500/15 border-sky-500/40" },
   yellow:  { label: "Amarelos",     icon: Square,       color: "text-yellow-300",  bg: "bg-yellow-500/15 border-yellow-500/40" },
   red:     { label: "Vermelhos",    icon: Square,       color: "text-red-400",     bg: "bg-red-500/15 border-red-500/40" },
+  defensive: { label: "Defensivas", icon: Shield, color: "text-cyan-300", bg: "bg-cyan-500/15 border-cyan-500/40" },
 };
 
 export const Route = createFileRoute("/carreira/$careerId/jogo")({
@@ -85,6 +89,12 @@ function JogoPage() {
   const [assists, setAssists] = useState<Record<string, number>>({});
   const [yellow, setYellow] = useState<Record<string, number>>({});
   const [red, setRed] = useState<Record<string, number>>({});
+  const [defensive, setDefensive] = useState<Record<string, number>>({});
+  const [goalDetails, setGoalDetails] = useState<GoalDetail[]>([]);
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [goalPlayerId, setGoalPlayerId] = useState("");
+  const [goalMinute, setGoalMinute] = useState("");
+  const [goalDescription, setGoalDescription] = useState("");
 
   // Substituições feitas durante o jogo (ao vivo).
   const [liveSubs, setLiveSubs] = useState<{ outId: string; inId: string; minute: number }[]>([]);
@@ -114,6 +124,8 @@ function JogoPage() {
         if (d.assists) setAssists(d.assists);
         if (d.yellow) setYellow(d.yellow);
         if (d.red) setRed(d.red);
+        if (d.defensive) setDefensive(d.defensive);
+        if (d.goalDetails) setGoalDetails(d.goalDetails);
         if (d.liveSubs) setLiveSubs(d.liveSubs);
         if (d.subOutId) setSubOutId(d.subOutId);
         if (d.subInId) setSubInId(d.subInId);
@@ -131,10 +143,10 @@ function JogoPage() {
   useEffect(() => {
     if (!draftRestored || typeof window === "undefined") return;
     window.localStorage.setItem(draftKey, JSON.stringify({
-      gf, ga, goals, assists, yellow, red, liveSubs, subOutId, subInId, subMinute,
+      gf, ga, goals, assists, yellow, red, defensive, goalDetails, liveSubs, subOutId, subInId, subMinute,
       activeStat, position, motmId, notes, defensiveNotes, savedAt: Date.now(),
     }));
-  }, [draftRestored, draftKey, gf, ga, goals, assists, yellow, red, liveSubs, subOutId, subInId, subMinute, activeStat, position, motmId, notes, defensiveNotes]);
+  }, [draftRestored, draftKey, gf, ga, goals, assists, yellow, red, defensive, goalDetails, liveSubs, subOutId, subInId, subMinute, activeStat, position, motmId, notes, defensiveNotes]);
 
   useEffect(() => {
     (async () => {
@@ -222,9 +234,46 @@ function JogoPage() {
   };
 
   const stateFor = (key: StatKey) =>
-    key === "goals" ? goals : key === "assists" ? assists : key === "yellow" ? yellow : red;
+    key === "goals" ? goals : key === "assists" ? assists : key === "yellow" ? yellow : key === "red" ? red : defensive;
   const setStateFor = (key: StatKey) =>
-    key === "goals" ? setGoals : key === "assists" ? setAssists : key === "yellow" ? setYellow : setRed;
+    key === "goals" ? setGoals : key === "assists" ? setAssists : key === "yellow" ? setYellow : key === "red" ? setRed : setDefensive;
+
+  const openGoalDialog = (playerId: string) => {
+    setGoalPlayerId(playerId);
+    setGoalMinute("");
+    setGoalDescription("");
+    setGoalDialogOpen(true);
+  };
+
+  const confirmGoal = () => {
+    const minute = Number.parseInt(goalMinute.replace(/'/g, "").trim(), 10);
+    if (!Number.isFinite(minute) || minute < 1 || minute > 120) {
+      toast.error("Informe um minuto válido entre 1 e 120.");
+      return;
+    }
+    if (!goalDescription.trim()) {
+      toast.error("Informe como foi o gol.");
+      return;
+    }
+    const playerId = goalPlayerId;
+    setGoals((current) => ({ ...current, [playerId]: (current[playerId] ?? 0) + 1 }));
+    setGoalDetails((current) => [...current, { playerId, minute, description: goalDescription.trim() }]);
+    setGoalDialogOpen(false);
+  };
+
+  const removeGoal = (playerId: string) => {
+    setGoals((current) => {
+      const next = { ...current };
+      const value = Math.max(0, (next[playerId] ?? 0) - 1);
+      if (value === 0) delete next[playerId];
+      else next[playerId] = value;
+      return next;
+    });
+    setGoalDetails((current) => {
+      const index = [...current].map((g, i) => ({ ...g, i })).reverse().find((g) => g.playerId === playerId)?.i;
+      return index === undefined ? current : current.filter((_, i) => i !== index);
+    });
+  };
 
   const bumpStat = (key: StatKey, playerId: string, delta: number) => {
     const current = stateFor(key);
@@ -234,6 +283,7 @@ function JogoPage() {
       toast.error("Um jogador só pode receber 1 vermelho.");
       return;
     }
+    if (key === "defensive" && nextVal > 99) return;
     if (key === "yellow" && nextVal > 2) {
       toast.error("Máximo de 2 amarelos por jogador. O 2º amarelo já significa expulsão.");
       return;
@@ -272,6 +322,13 @@ function JogoPage() {
     const derby = isDerby(club.slug, opponent.trim());
     const dName = derbyName(club.slug, opponent.trim());
 
+    const goalDetailsStr = goalDetails
+      .map((g) => {
+        const p = players.find((x) => x.id === g.playerId);
+        return p ? `${p.name} aos ${g.minute}' — ${g.description}` : "";
+      })
+      .filter(Boolean)
+      .join("; ");
     const scorersStr = namesFromCount(goals, players);
     const assistsStr = namesFromCount(assists, players);
     const yellowStr  = namesFromCount(yellow, players);
@@ -335,7 +392,7 @@ function JogoPage() {
       result: realResult,
       competition: "Brasileirão",
       motm_player_id: motmId || null,
-      notes: [notes.trim(), defensiveNotes.trim() ? `Atuação defensiva: ${defensiveNotes.trim()}` : ""].filter(Boolean).join("\n") || null,
+      notes: [notes.trim(), goalDetailsStr ? `Gols: ${goalDetailsStr}` : "", totalCount(defensive) > 0 ? `Atuações defensivas: ${namesFromCount(defensive, players)}` : ""].filter(Boolean).join("\n") || null,
     });
     if (matchErr) { toast.error(matchErr.message); setBusy(false); return; }
 
@@ -869,7 +926,7 @@ function JogoPage() {
                     >
                       <button
                         type="button"
-                        onClick={() => bumpStat(activeStat, p.id, 1)}
+                        onClick={() => activeStat === "goals" ? openGoalDialog(p.id) : bumpStat(activeStat, p.id, 1)}
                         className="flex flex-1 items-center gap-2 text-left"
                       >
                         <span className="w-9 rounded bg-muted px-1 py-0.5 text-center text-[10px] font-bold">{p.position}</span>
@@ -880,7 +937,7 @@ function JogoPage() {
                           </Badge>
                         )}
                       </button>
-                      {count > 0 && (
+                      {count > 0 && activeStat !== "goals" && (
                         <button
                           type="button"
                           onClick={() => bumpStat(activeStat, p.id, -1)}
@@ -890,14 +947,14 @@ function JogoPage() {
                           <Minus className="h-3 w-3" />
                         </button>
                       )}
-                      <button
+                      {activeStat !== "goals" && <button
                         type="button"
                         onClick={() => bumpStat(activeStat, p.id, 1)}
                         className="rounded p-1 text-muted-foreground hover:bg-background/60"
                         aria-label="Adicionar um"
                       >
                         <Plus className="h-3 w-3" />
-                      </button>
+                      </button>}
                     </div>
                   );
                 })}
@@ -1008,8 +1065,7 @@ function JogoPage() {
 
           <div className="space-y-2 rounded-md border border-border/40 bg-background/20 p-3">
             <Label>🛡️ Atuação defensiva</Label>
-            <Textarea value={defensiveNotes} onChange={(e) => setDefensiveNotes(e.target.value)} placeholder="Ex.: Rochet fez 3 defesas difíceis; zagueiro salvou em cima da linha; Bidu deu um carrinho perfeito..." className="min-h-20 resize-none" />
-            <p className="text-[10px] text-muted-foreground">A IA vai interpretar os nomes e as ações defensivas para destacar a atuação na notícia. O clean sheet é calculado automaticamente pelo placar e pelo tempo em campo.</p>
+            <p className="text-[10px] text-muted-foreground">Registre as ações defensivas diretamente nos jogadores acima. Cada clique adiciona +1, no mesmo padrão de gols, assistências e cartões.</p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
