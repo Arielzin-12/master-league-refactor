@@ -1,9 +1,45 @@
 import type { Position } from "./squads";
 
 /** Jogadores adicionados pelo usuário ao mercado (valor, clube, nacionalidade e estilo informados por ele). */
-export interface ExtraMarketPlayer { name: string; position: Position; value: number; club: string; nationality: string; traits: string; league: string }
+export interface ExtraMarketPlayer { name: string; position: Position; value: number; club: string; nationality: string; traits: string; league: string; age?: number; overall?: number; expectedWage?: number }
 
 export const EXTRA_MARKET: ExtraMarketPlayer[] = [
+ {
+  "name": "João Félix",
+  "position": "MAT",
+  "value": 28000000,
+  "club": "Al-Nassr",
+  "nationality": "Portugal",
+  "traits": "Creative Playmaker",
+  "league": "Saudi Pro League",
+  "age": 26,
+  "overall": 83,
+  "expectedWage": 336538
+ },
+ {
+  "name": "Francisco Conceição",
+  "position": "PTA",
+  "value": 30000000,
+  "club": "Juventus",
+  "nationality": "Portugal",
+  "traits": "Prolific Winger",
+  "league": "Serie A",
+  "age": 23,
+  "overall": 81,
+  "expectedWage": 136890
+ },
+ {
+  "name": "Antony",
+  "position": "PTA",
+  "value": 40000000,
+  "club": "Real Betis",
+  "nationality": "Brasil",
+  "traits": "Prolific Winger",
+  "league": "La Liga",
+  "age": 26,
+  "overall": 81,
+  "expectedWage": 120192
+ },
  {
   "name": "Ênio",
   "position": "PTA",
