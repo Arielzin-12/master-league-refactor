@@ -5,6 +5,18 @@ export interface ExtraMarketPlayer { name: string; position: Position; value: nu
 
 export const EXTRA_MARKET: ExtraMarketPlayer[] = [
  {
+  "name": "Justin Kluivert",
+  "position": "MAT",
+  "value": 25000000,
+  "club": "Bournemouth",
+  "nationality": "Holanda",
+  "traits": "Creative Playmaker",
+  "league": "Premier League",
+  "age": 27,
+  "overall": 81,
+  "expectedWage": 128794
+ },
+ {
   "name": "João Félix",
   "position": "MAT",
   "value": 28000000,
