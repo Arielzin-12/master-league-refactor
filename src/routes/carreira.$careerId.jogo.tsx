@@ -937,10 +937,10 @@ function JogoPage() {
                           </Badge>
                         )}
                       </button>
-                      {count > 0 && activeStat !== "goals" && (
+                      {count > 0 && (
                         <button
                           type="button"
-                          onClick={() => bumpStat(activeStat, p.id, -1)}
+                          onClick={() => activeStat === "goals" ? removeGoal(p.id) : bumpStat(activeStat, p.id, -1)}
                           className="rounded p-1 text-muted-foreground hover:bg-background/60"
                           aria-label="Remover um"
                         >
