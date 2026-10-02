@@ -1088,6 +1088,29 @@ function JogoPage() {
         </CardContent>
       </Card>
 
+      <Dialog open={goalDialogOpen} onOpenChange={setGoalDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar gol</DialogTitle>
+            <DialogDescription>Informe o minuto e como foi o gol.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="goal-minute">Minuto</Label>
+              <Input id="goal-minute" value={goalMinute} onChange={(e) => setGoalMinute(e.target.value)} placeholder="12' ou 12" inputMode="numeric" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="goal-description">Como foi o gol?</Label>
+              <Input id="goal-description" value={goalDescription} onChange={(e) => setGoalDescription(e.target.value)} placeholder="Ex.: cavadinha, no ângulo, de falta..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setGoalDialogOpen(false)}>Cancelar</Button>
+            <Button type="button" onClick={confirmGoal}>Adicionar gol</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
