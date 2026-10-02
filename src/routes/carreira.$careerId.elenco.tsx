@@ -192,6 +192,7 @@ function ElencoPage() {
       technique: stats.technique,
       market_value_eur: value.marketValue,
       weekly_wage_eur: value.weeklyWage,
+      contract_until_season: career.season + 3,
     });
     if (error) { toast.error(error.message); return; }
     await supabase.from("careers").update({
@@ -267,7 +268,7 @@ function ElencoPage() {
                             <span>⚽ {p.goals}</span>
                             <span>🅰️ {p.assists}</span>
                             <span>{formatEur(p.weekly_wage_eur)}/sem</span>
-                            <span>Contrato: até T${p.contract_until_season}</span>
+                            <span>Contrato: até temporada {p.contract_until_season}</span>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1.5">
