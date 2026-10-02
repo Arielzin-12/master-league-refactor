@@ -235,7 +235,7 @@ function AuthCard() {
                     maxLength={6}
                     required
                     value={resetCode}
-                    onChange={(e) => setResetCode(e.target.value.replace(/\\D/g, "").slice(0, 6))}
+                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
                     placeholder="123456"
                   />
                 </div>
