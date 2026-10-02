@@ -1,15 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Trophy, Newspaper, Users, ShieldCheck, Sparkles } from "lucide-react";
+import { Trophy, Newspaper, Users, ShieldCheck, Sparkles, Mail, Lock, Eye, EyeClosed, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
