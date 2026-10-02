@@ -284,34 +284,48 @@ function MercadoPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((p) => (
-          <Card key={p.id} className="border-border/60 bg-card/70">
-            <CardContent className="space-y-3 p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-gradient-gold text-primary-foreground">
-                  <span className="text-base font-black leading-none">{p.overall}</span>
-                  <span className="text-[10px] font-semibold uppercase">{p.position}</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold">{p.name}</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    <Badge variant="secondary" className="text-[10px]">🏟️ {p.current_club || "Livre"}</Badge>
-                    <Badge variant="outline" className="text-[10px]">{p.region}</Badge>
-                  </div>
-                </div>
-              </div>
-              <ValueDetailsDialog player={p} />
-              <NegotiateDialog player={p} onClose={closeDeal} disabled={!career.transfer_window_open} cash={career.cash_eur} />
-            </CardContent>
-          </Card>
-        ))}
-        {filtered.length === 0 && (
-          <p className="md:col-span-2 xl:col-span-3 text-muted-foreground">
-            {market.length === 0 ? "Mercado vazio." : "Nenhum jogador encontrado com esses filtros."}
-          </p>
-        )}
-      </div>
+      {["GOL","ZAG","LAT","VOL","MDF","MCT","MAT","PTA","CA"].map((position) => {
+        const players = filtered.filter((p) => p.position === position);
+        if (!players.length) return null;
+        const labels: Record<string, string> = { GOL:"Goleiros", ZAG:"Zagueiros", LAT:"Laterais", VOL:"Volantes", MDF:"Meias defensivos", MCT:"Meias centrais", MAT:"Meias ofensivos", PTA:"Pontas", CA:"Centroavantes" };
+        return (
+          <section key={position} className="mb-8 space-y-3">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-black">{labels[position]}</h2>
+              <Badge variant="outline">{players.length}</Badge>
+              <div className="h-px flex-1 bg-border/50" />
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {players.map((p) => (
+                <Card key={p.id} className="border-border/60 bg-card/70">
+                  <CardContent className="space-y-3 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-gradient-gold text-primary-foreground">
+                        <span className="text-base font-black leading-none">{p.overall}</span>
+                        <span className="text-[10px] font-semibold uppercase">{p.position}</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold">{p.name}</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <Badge variant="secondary" className="text-[10px]">🏟️ {p.current_club || "Livre"}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{p.region}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <ValueDetailsDialog player={p} />
+                    <NegotiateDialog player={p} onClose={closeDeal} disabled={!career.transfer_window_open} cash={career.cash_eur} />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+      {filtered.length === 0 && (
+        <p className="text-muted-foreground">
+          {market.length === 0 ? "Mercado vazio." : "Nenhum jogador encontrado com esses filtros."}
+        </p>
+      )}
     </div>
   );
 }
