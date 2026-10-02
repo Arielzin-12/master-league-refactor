@@ -121,6 +121,7 @@ function MercadoPage() {
         weekly_wage_eur: n.wage,
         original_wage_eur: n.wage,
         market_value_eur: n.player.market_value_eur,
+        contract_until_season: career.season + 3,
       });
       await supabase.from("market_players").delete().eq("id", n.player.id);
       await supabase.from("careers").update({
@@ -157,6 +158,7 @@ function MercadoPage() {
         weekly_wage_eur: myWageShare,
         original_wage_eur: myWageShare,
         market_value_eur: n.player.market_value_eur,
+        contract_until_season: career.season + 3,
       });
       await supabase.from("market_players").delete().eq("id", n.player.id);
       await supabase.from("careers").update({
