@@ -167,7 +167,6 @@ function AuthCard() {
     setResetCode("");
     setNewPassword("");
     setConfirmNewPassword("");
-    await supabase.auth.signOut();
   };
 
   const handleGoogle = async () => {
