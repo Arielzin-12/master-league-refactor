@@ -1,3 +1,4 @@
+import type { ClubSlug } from "@/data/clubs";
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { applyPostMatch } from "@/lib/postmatch";
 import { advanceCareerSeason, generateManagerOffers } from "@/lib/career";
