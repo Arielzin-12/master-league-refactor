@@ -48,12 +48,12 @@ export const Route = createRootRoute({
     links: [
       {
         rel: "icon",
-        type: "image/svg+xml",
-        href: "/favicon.svg",
+        type: "image/png",
+        href: "/favicon.png",
       },
       {
         rel: "apple-touch-icon",
-        href: "/favicon.svg",
+        href: "/favicon.png",
       },
       {
         rel: "stylesheet",
