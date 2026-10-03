@@ -22,6 +22,9 @@ interface PM {
   assists: Record<string, number>;
   yellow: Record<string, number>;
   red: Record<string, number>;
+  defensive: Record<string, number>;
+  progressivePass: Record<string, number>;
+  dangerousShot: Record<string, number>;
   motmId: string | null;
   board: { board_confidence: number; fan_mood: number; squad_morale: number; reputation: number };
 }
