@@ -209,9 +209,20 @@ function AuthCard() {
 
   const handleGoogle = async () => {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google");
-    setBusy(false);
-    if (result.error) toast.error(result.error.message);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+      },
+    });
+
+    if (error) {
+      setBusy(false);
+      toast.error(error.message);
+    }
+    // Em caso de sucesso, o navegador é redirecionado para o Google.
+    // Não limpamos o loading antes do redirect para evitar um segundo clique.
   };
 
   const inputClass = (id: string) =>
