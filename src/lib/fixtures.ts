@@ -123,7 +123,12 @@ export async function generateSeason(params: {
 
   // insere em blocos para não estourar o payload
   for (let i = 0; i < fixtures.length; i += 200) {
-    const { error } = await supabase.from("fixtures").insert(fixtures.slice(i, i + 200));
+    const { error } = await supabase
+      .from("fixtures")
+      .upsert(fixtures.slice(i, i + 200), {
+        onConflict: "career_id,season,matchday,home_club",
+        ignoreDuplicates: true,
+      });
     if (error) throw error;
   }
 
@@ -134,7 +139,12 @@ export async function generateSeason(params: {
     club_name: name,
     club_slug: slugifyClub(name),
   }));
-  const { error: sErr } = await supabase.from("standings").insert(standings);
+  const { error: sErr } = await supabase
+    .from("standings")
+    .upsert(standings, {
+      onConflict: "career_id,season,club_name",
+      ignoreDuplicates: true,
+    });
   if (sErr) throw sErr;
 
   return { totalMatchdays: TOTAL_MATCHDAYS };
