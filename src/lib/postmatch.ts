@@ -311,6 +311,15 @@ async function createMatchSocial(p: PM) {
           : `Derrota do ${p.clubName} para o ${p.opponent}. ${defensive ? `Apesar do resultado, ${defensive} tiveram destaque defensivo.` : "Pressão sobre o treinador aumenta."}${progressive ? ` ${progressive} tentou acelerar a construção.` : ""}`,
       comments: commentsFor(p, "jornalista"),
     },
+    {
+      author_type: "torcedor", author_name: "Central da Torcida", author_handle: `@torcida_${handle}`,
+      body: p.result === "V"
+        ? `HOJE TEM ORGULHO! 🔥 ${p.clubName} venceu ${p.opponent}. ${dangerous ? `Gostei da ousadia de ${dangerous}.` : "Agora é manter a pegada."}`
+        : p.result === "E"
+          ? `Um ponto na conta. ${defensive ? `A entrega de ${defensive} na defesa foi importante.` : "Tem que caprichar mais na próxima."}`
+          : `Dói perder, mas a temporada não acabou. ${progressive ? `${progressive} tentou fazer o time jogar.` : "Cabeça no próximo jogo e reação já!"}`,
+      comments: commentsFor(p, "torcedor"),
+    },
   ];
   for (const post of posts) {
     const { data } = await supabase.from("social_posts").insert({
