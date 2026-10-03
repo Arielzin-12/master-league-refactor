@@ -114,25 +114,39 @@ export async function applyPostMatch(p: PM) {
     }
   }
 
-  // 4) Lesão aleatória (chance baixa, só entre quem jogou)
+  // 4) Lesões aleatórias: chance por jogador, não uma chance única por partida.
+  // Base realista: 1,5% por jogador que atuou. Histórico de lesões: 2,5%.
+  // Quem acabou de retornar de lesão recebe 1% nesta partida.
   const played = [...minutes.keys()];
-  if (played.length && Math.random() < 0.18) {
-    const id = played[Math.floor(Math.random() * played.length)]!;
+  const { data: injuryHistory } = await supabase
+    .from("injuries")
+    .select("player_id, started_matchday, returns_matchday, recovered")
+    .eq("career_id", p.careerId)
+    .in("player_id", played);
+
+  for (const id of played) {
     const pl = byId.get(id);
+    if (!pl || pl.injured || pl.injury_type) continue;
+
+    const history = (injuryHistory ?? []).filter((i) => i.player_id === id);
+    const justReturned = history.some((i) => i.recovered && i.returns_matchday === p.matchday);
+    const hasHistory = history.length > 0;
+    const injuryChance = justReturned ? 0.01 : hasHistory ? 0.025 : 0.015;
+
+    if (Math.random() >= injuryChance) continue;
+
     const [type, sev, games] = INJURIES[Math.floor(Math.random() * INJURIES.length)]!;
-    if (pl) {
-      const returns = p.matchday + games + 1;
-      await supabase.from("injuries").insert({
-        career_id: p.careerId, user_id: p.userId, player_id: id, player_name: pl.name,
-        injury_type: type, severity: sev, started_matchday: p.matchday, returns_matchday: returns, recovered: false,
-      });
-      await supabase.from("squad_players").update({ injured: true, injury_type: type, injury_severity: sev, injury_returns_at_matchday: returns }).eq("id", id);
-      await supabase.from("news_feed").insert({
-        career_id: p.careerId, user_id: p.userId, kind: "headline",
-        title: `🏥 ${pl.name} sofre lesão`,
-        body: `${pl.name} saiu com ${type.toLowerCase()} (${sev}) contra o ${p.opponent} e deve voltar na rodada ${returns}.`,
-      });
-    }
+    const returns = p.matchday + games + 1;
+    await supabase.from("injuries").insert({
+      career_id: p.careerId, user_id: p.userId, player_id: id, player_name: pl.name,
+      injury_type: type, severity: sev, started_matchday: p.matchday, returns_matchday: returns, recovered: false,
+    });
+    await supabase.from("squad_players").update({ injured: true, injury_type: type, injury_severity: sev, injury_returns_at_matchday: returns }).eq("id", id);
+    await supabase.from("news_feed").insert({
+      career_id: p.careerId, user_id: p.userId, kind: "headline",
+      title: `🏥 ${pl.name} sofre lesão`,
+      body: `${pl.name} saiu com ${type.toLowerCase()} (${sev}) contra o ${p.opponent} e deve voltar na rodada ${returns}.`,
+    });
   }
 
   // 5) Finanças: folha salarial sai da reserva salarial, bônus entra no orçamento de transferências
