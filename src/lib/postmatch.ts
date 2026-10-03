@@ -169,12 +169,12 @@ export async function applyPostMatch(p: PM) {
     const potential = Math.max(overall, Number(c.potential ?? overall));
     if (age >= 30 || overall >= potential) continue;
 
-    const previousMinutes = Math.max(0, Number(c.minutes ?? 0));
-    const totalMinutes = previousMinutes + minsPlayed;
-    const previousAppearances = Math.max(0, Number(c.appearances ?? 0));
-    const totalAppearances = previousAppearances + 1;
-    const previousRatingSum = Number(c.rating_sum ?? 0);
-    const previousRating = previousAppearances > 0 ? previousRatingSum / previousAppearances : 0;
+    // A consulta acontece depois da atualização das estatísticas deste jogo,
+    // então reconstruímos os valores anteriores para detectar o marco exato.
+    const totalMinutes = Math.max(0, Number(c.minutes ?? 0));
+    const previousMinutes = Math.max(0, totalMinutes - minsPlayed);
+    const totalAppearances = Math.max(0, Number(c.appearances ?? 0));
+    const previousAppearances = Math.max(0, totalAppearances - 1);
 
     let milestoneMinutes = 1200;
     if (age <= 20) milestoneMinutes = 450;
@@ -194,12 +194,15 @@ export async function applyPostMatch(p: PM) {
       - (p.yellow[c.id] ?? 0) * 0.3
       + (p.motmId === c.id ? 1 : 0);
     const rating = Math.max(3, Math.min(10, currentRating));
+    const totalRatingSum = Number(c.rating_sum ?? 0);
+    const previousRatingSum = Math.max(0, totalRatingSum - rating);
     const seasonAverage = totalAppearances > 0
-      ? (previousRatingSum + rating) / totalAppearances
+      ? totalRatingSum / totalAppearances
       : rating;
 
-    // Atuações excepcionais podem acelerar um jovem, mas no máximo +1 extra por jogo.
-    if (rating >= 8.5 && minsPlayed >= 60 && seasonAverage >= 7.0 && age <= 23) delta += 1;
+    // Uma atuação excepcional acelera o desenvolvimento apenas quando
+    // o jogador também atingiu um marco de minutos neste jogo.
+    if (delta > 0 && rating >= 8.5 && minsPlayed >= 60 && seasonAverage >= 7.0 && age <= 23) delta += 1;
 
     // 24–26 evoluem mais devagar; 27–29 só evoluem com desempenho consistente.
     if (age >= 24 && age <= 26 && seasonAverage < 6.8) delta = 0;
