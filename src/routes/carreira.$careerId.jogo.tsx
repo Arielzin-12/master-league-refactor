@@ -20,7 +20,7 @@ import { resolveMatchday } from "@/lib/fixtures";
 import { loadLineup, type SavedLineup } from "@/lib/lineup";
 import { POSITION_ORDER, normalizePosition } from "@/data/squads";
 import { toast } from "sonner";
-import { Trophy, ChevronRight, Goal, HandHelping, Square, Plus, Minus, ArrowRightLeft, Flame, ClipboardList, Trash2, Shield } from "lucide-react";
+import { Trophy, ChevronRight, Goal, HandHelping, Square, Plus, Minus, ArrowRightLeft, Flame, ClipboardList, Trash2, Shield, ArrowUpRight, Target } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { victoryBonus, buildIncomingOffers } from "@/lib/players";
@@ -42,7 +42,7 @@ interface SquadRow {
   is_captain: boolean;
 }
 
-type StatKey = "goals" | "assists" | "yellow" | "red" | "defensive";
+type StatKey = "goals" | "assists" | "yellow" | "red" | "defensive" | "progressive_pass" | "dangerous_shot";
 
 type GoalDetail = { playerId: string; minute: number; description: string };
 
@@ -52,6 +52,8 @@ const STAT_META: Record<StatKey, { label: string; icon: typeof Goal; color: stri
   yellow:  { label: "Amarelos",     icon: Square,       color: "text-yellow-300",  bg: "bg-yellow-500/15 border-yellow-500/40" },
   red:     { label: "Vermelhos",    icon: Square,       color: "text-red-400",     bg: "bg-red-500/15 border-red-500/40" },
   defensive: { label: "Defensivas", icon: Shield, color: "text-cyan-300", bg: "bg-cyan-500/15 border-cyan-500/40" },
+  progressive_pass: { label: "Passe progressivo", icon: ArrowUpRight, color: "text-violet-300", bg: "bg-violet-500/15 border-violet-500/40" },
+  dangerous_shot: { label: "Chute perigoso", icon: Target, color: "text-orange-300", bg: "bg-orange-500/15 border-orange-500/40" },
 };
 
 export const Route = createFileRoute("/carreira/$careerId/jogo")({
@@ -90,6 +92,8 @@ function JogoPage() {
   const [yellow, setYellow] = useState<Record<string, number>>({});
   const [red, setRed] = useState<Record<string, number>>({});
   const [defensive, setDefensive] = useState<Record<string, number>>({});
+  const [progressivePass, setProgressivePass] = useState<Record<string, number>>({});
+  const [dangerousShot, setDangerousShot] = useState<Record<string, number>>({});
   const [goalDetails, setGoalDetails] = useState<GoalDetail[]>([]);
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const [goalPlayerId, setGoalPlayerId] = useState("");
@@ -125,6 +129,8 @@ function JogoPage() {
         if (d.yellow) setYellow(d.yellow);
         if (d.red) setRed(d.red);
         if (d.defensive) setDefensive(d.defensive);
+        if (d.progressivePass) setProgressivePass(d.progressivePass);
+        if (d.dangerousShot) setDangerousShot(d.dangerousShot);
         if (d.goalDetails) setGoalDetails(d.goalDetails);
         if (d.liveSubs) setLiveSubs(d.liveSubs);
         if (d.subOutId) setSubOutId(d.subOutId);
@@ -143,10 +149,10 @@ function JogoPage() {
   useEffect(() => {
     if (!draftRestored || typeof window === "undefined") return;
     window.localStorage.setItem(draftKey, JSON.stringify({
-      gf, ga, goals, assists, yellow, red, defensive, goalDetails, liveSubs, subOutId, subInId, subMinute,
+      gf, ga, goals, assists, yellow, red, defensive, progressivePass, dangerousShot, goalDetails, liveSubs, subOutId, subInId, subMinute,
       activeStat, position, motmId, notes, defensiveNotes, savedAt: Date.now(),
     }));
-  }, [draftRestored, draftKey, gf, ga, goals, assists, yellow, red, defensive, goalDetails, liveSubs, subOutId, subInId, subMinute, activeStat, position, motmId, notes, defensiveNotes]);
+  }, [draftRestored, draftKey, gf, ga, goals, assists, yellow, red, defensive, progressivePass, dangerousShot, goalDetails, liveSubs, subOutId, subInId, subMinute, activeStat, position, motmId, notes, defensiveNotes]);
 
   useEffect(() => {
     (async () => {
@@ -234,9 +240,9 @@ function JogoPage() {
   };
 
   const stateFor = (key: StatKey) =>
-    key === "goals" ? goals : key === "assists" ? assists : key === "yellow" ? yellow : key === "red" ? red : defensive;
+    key === "goals" ? goals : key === "assists" ? assists : key === "yellow" ? yellow : key === "red" ? red : key === "defensive" ? defensive : key === "progressive_pass" ? progressivePass : dangerousShot;
   const setStateFor = (key: StatKey) =>
-    key === "goals" ? setGoals : key === "assists" ? setAssists : key === "yellow" ? setYellow : key === "red" ? setRed : setDefensive;
+    key === "goals" ? setGoals : key === "assists" ? setAssists : key === "yellow" ? setYellow : key === "red" ? setRed : key === "defensive" ? setDefensive : key === "progressive_pass" ? setProgressivePass : setDangerousShot;
 
   const openGoalDialog = (playerId: string) => {
     setGoalPlayerId(playerId);
@@ -283,7 +289,7 @@ function JogoPage() {
       toast.error("Um jogador só pode receber 1 vermelho.");
       return;
     }
-    if (key === "defensive" && nextVal > 99) return;
+    if ((key === "defensive" || key === "progressive_pass" || key === "dangerous_shot") && nextVal > 99) return;
     if (key === "yellow" && nextVal > 2) {
       toast.error("Máximo de 2 amarelos por jogador. O 2º amarelo já significa expulsão.");
       return;
@@ -333,6 +339,8 @@ function JogoPage() {
     const assistsStr = namesFromCount(assists, players);
     const yellowStr  = namesFromCount(yellow, players);
     const redStr     = namesFromCount(red, players);
+    const progressivePassStr = namesFromCount(progressivePass, players);
+    const dangerousShotStr = namesFromCount(dangerousShot, players);
 
     // === MORAL MISTA: base por resultado + ajuste individual ===
     const baseDelta = realResult === "V" ? (gf - ga >= 3 ? 8 : 5) : realResult === "E" ? -1 : (ga - gf >= 3 ? -10 : -6);
@@ -392,7 +400,7 @@ function JogoPage() {
       result: realResult,
       competition: "Brasileirão",
       motm_player_id: motmId || null,
-      notes: [notes.trim(), goalDetailsStr ? `Gols: ${goalDetailsStr}` : "", totalCount(defensive) > 0 ? `Atuações defensivas: ${namesFromCount(defensive, players)}` : ""].filter(Boolean).join("\n") || null,
+      notes: [notes.trim(), goalDetailsStr ? `Gols: ${goalDetailsStr}` : "", totalCount(defensive) > 0 ? `Atuações defensivas: ${namesFromCount(defensive, players)}` : "", totalCount(progressivePass) > 0 ? `Passes progressivos: ${progressivePassStr}` : "", totalCount(dangerousShot) > 0 ? `Chutes perigosos: ${dangerousShotStr}` : ""].filter(Boolean).join("\n") || null,
     });
     if (matchErr) { toast.error(matchErr.message); setBusy(false); return; }
 
@@ -886,7 +894,7 @@ function JogoPage() {
 
           <div className="space-y-2">
             <Label>Lances do jogo</Label>
-            <div className="grid grid-cols-4 gap-1">
+            <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
               {(Object.keys(STAT_META) as StatKey[]).map((key) => {
                 const meta = STAT_META[key];
                 const Icon = meta.icon;
