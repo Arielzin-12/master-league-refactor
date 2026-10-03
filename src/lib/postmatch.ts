@@ -296,28 +296,54 @@ async function createMatchSocial(p: PM) {
   const defensive = listNames(p.defensive);
   const progressive = listNames(p.progressivePass);
   const dangerous = listNames(p.dangerousShot);
+  const clubBody =
+    "FIM DE JOGO | " + score +
+    (scorers ? "\n⚽ " + scorers : "") +
+    (defensive ? "\n🛡️ Defensivas: " + defensive : "") +
+    (progressive ? "\n📈 Passes progressivos: " + progressive : "") +
+    (dangerous ? "\n🎯 Chutes perigosos: " + dangerous : "");
+
+  let journalistBody = "";
+  if (p.result === "V") {
+    journalistBody = p.clubName + " vence o " + p.opponent + " e ganha fôlego na tabela. " +
+      (progressive ? "Na construção, " + progressive + " apareceu com passes progressivos." : "A equipe encontrou boas soluções para sair da pressão.") +
+      (dangerous ? " " + dangerous + " também levou perigo." : "");
+  } else if (p.result === "E") {
+    journalistBody = "Empate entre " + p.clubName + " e " + p.opponent + ". " +
+      (dangerous ? "Chutes perigosos de " + dangerous + " chamaram atenção." : "Comissão técnica deve cobrar mais eficiência.") +
+      (defensive ? " " + defensive + " também tiveram ações defensivas importantes." : "");
+  } else {
+    journalistBody = "Derrota do " + p.clubName + " para o " + p.opponent + ". " +
+      (defensive ? "Apesar do resultado, " + defensive + " tiveram destaque defensivo." : "Pressão sobre o treinador aumenta.") +
+      (progressive ? " " + progressive + " tentou acelerar a construção." : "");
+  }
+
+  let fanBody = "";
+  if (p.result === "V") {
+    fanBody = "HOJE TEM ORGULHO! 🔥 " + p.clubName + " venceu " + p.opponent + ". " +
+      (dangerous ? "Gostei da ousadia de " + dangerous + "." : "Agora é manter a pegada.");
+  } else if (p.result === "E") {
+    fanBody = "Um ponto na conta. " +
+      (defensive ? "A entrega de " + defensive + " na defesa foi importante." : "Tem que caprichar mais na próxima.");
+  } else {
+    fanBody = "Dói perder, mas a temporada não acabou. " +
+      (progressive ? progressive + " tentou fazer o time jogar." : "Cabeça no próximo jogo e reação já!");
+  }
+
   const posts = [
     {
-      author_type: "clube", author_name: p.clubName, author_handle: `@${handle}oficial`,
-      body: `FIM DE JOGO | ${score}${scorers ? `\n⚽ ${scorers}` : ""}${defensive ? `\n🛡️ Defensivas: ${defensive}` : ""}${progressive ? `\n📈 Passes progressivos: ${progressive}` : ""}${dangerous ? `\n🎯 Chutes perigosos: ${dangerous}` : ""}`,
+      author_type: "clube", author_name: p.clubName, author_handle: "@" + handle + "oficial",
+      body: clubBody,
       comments: commentsFor(p, "clube"),
     },
     {
-      author_type: "jornalista", author_name: "Setorista MasterLeague", author_handle: `@setorista_${handle}`,
-      body: p.result === "V"
-        ? `${p.clubName} vence o ${p.opponent} e ganha fôlego na tabela. ${progressive ? `Na construção, ${progressive} apareceu com passes progressivos.` : "A equipe encontrou boas soluções para sair da pressão."}${dangerous ? ` ${dangerous} também levou perigo.` : ""}`
-        : p.result === "E"
-          ? `Empate entre ${p.clubName} e ${p.opponent}. ${dangerous ? `Chutes perigosos de ${dangerous} chamaram atenção.` : "Comissão técnica deve cobrar mais eficiência."}${defensive ? ` ${defensive} também tiveram ações defensivas importantes.` : ""}`
-          : `Derrota do ${p.clubName} para o ${p.opponent}. ${defensive ? `Apesar do resultado, ${defensive} tiveram destaque defensivo.` : "Pressão sobre o treinador aumenta."}${progressive ? ` ${progressive} tentou acelerar a construção.` : ""}`,
+      author_type: "jornalista", author_name: "Setorista MasterLeague", author_handle: "@setorista_" + handle,
+      body: journalistBody,
       comments: commentsFor(p, "jornalista"),
     },
     {
-      author_type: "torcedor", author_name: "Central da Torcida", author_handle: `@torcida_${handle}`,
-      body: p.result === "V"
-        ? `HOJE TEM ORGULHO! 🔥 ${p.clubName} venceu ${p.opponent}. ${dangerous ? `Gostei da ousadia de ${dangerous}.` : "Agora é manter a pegada."}`
-        : p.result === "E"
-          ? `Um ponto na conta. ${defensive ? `A entrega de ${defensive} na defesa foi importante.` : "Tem que caprichar mais na próxima."}`
-          : `Dói perder, mas a temporada não acabou. ${progressive ? `${progressive} tentou fazer o time jogar.` : "Cabeça no próximo jogo e reação já!"}`,
+      author_type: "torcedor", author_name: "Central da Torcida", author_handle: "@torcida_" + handle,
+      body: fanBody,
       comments: commentsFor(p, "torcedor"),
     },
   ];
