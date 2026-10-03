@@ -330,7 +330,7 @@ export async function switchManagerClub(params: {
 }
 /**
  * Fecha uma temporada e prepara a seguinte.
- * A evolução considera idade, potencial, minutos e média de atuação.
+ * A evolução já foi aplicada ao final de cada partida.
  */
 export async function advanceCareerSeason(careerId: string, userId: string, clubName: string, currentSeason: number) {
   const nextSeason = currentSeason + 1;
