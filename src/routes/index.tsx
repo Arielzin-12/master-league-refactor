@@ -124,17 +124,47 @@ function AuthCard() {
 
   const handleRequestPasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim()) {
+      toast.error("Digite seu e-mail.");
+      return;
+    }
+
     setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
     });
     setBusy(false);
+
     if (error) {
       toast.error(error.message);
       return;
     }
+
     setResetStep("code");
+    setResetCode("");
     toast.success("Enviamos um código de recuperação para seu e-mail.");
+  };
+
+  const handleResendPasswordReset = async () => {
+    if (!email.trim()) {
+      toast.error("Digite seu e-mail.");
+      setResetStep("email");
+      return;
+    }
+
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+    });
+    setBusy(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setResetCode("");
+    toast.success("Novo código enviado para seu e-mail.");
   };
 
   const handleConfirmPasswordReset = async (e: React.FormEvent) => {
@@ -254,14 +284,15 @@ function AuthCard() {
                     id="reset-code"
                     label="Código de recuperação"
                     inputMode="numeric"
-                    maxLength={8}
+                    autoComplete="one-time-code"
+                    maxLength={6}
                     minLength={6}
                     required
                     value={resetCode}
                     placeholder="123456"
                     icon={<ShieldCheck className={iconClass("reset-code")} />}
                     className={inputClass("reset-code")}
-                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     onFocus={() => setFocusedInput("reset-code")}
                     onBlur={() => setFocusedInput(null)}
                   />
@@ -297,18 +328,30 @@ function AuthCard() {
                 </form>
               )}
 
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setForgotPassword(false);
-                  setResetStep("email");
-                  setResetCode("");
-                }}
-                className="w-full text-center text-xs font-medium text-white/45 transition hover:text-white"
-              >
-                Voltar para entrar
-              </button>
+              <div className="flex flex-col gap-2">
+                {resetStep === "code" && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={handleResendPasswordReset}
+                    className="w-full text-center text-xs font-medium text-emerald-300/70 transition hover:text-emerald-300 disabled:opacity-50"
+                  >
+                    {busy ? "Enviando..." : "Reenviar código"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setForgotPassword(false);
+                    setResetStep("email");
+                    setResetCode("");
+                  }}
+                  className="w-full text-center text-xs font-medium text-white/45 transition hover:text-white"
+                >
+                  Voltar para entrar
+                </button>
+              </div>
             </div>
           ) : (
             <>
