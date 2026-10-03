@@ -285,10 +285,21 @@ async function createMatchSocial(p: PM) {
     return n > 1 ? `${name} (${n})` : name;
   }).join(", ");
   const handle = p.clubName.toLowerCase().replace(/[^a-z]/g, "");
+  const listNames = (rec: Record<string, number>) => Object.entries(rec)
+    .filter(([, n]) => n > 0)
+    .map(([id, n]) => {
+      const name = p.players.find((x) => x.id === id)?.name ?? "";
+      return n > 1 ? `${name} (${n})` : name;
+    })
+    .filter(Boolean)
+    .join(", ");
+  const defensive = listNames(p.defensive);
+  const progressive = listNames(p.progressivePass);
+  const dangerous = listNames(p.dangerousShot);
   const posts = [
     {
       author_type: "clube", author_name: p.clubName, author_handle: `@${handle}oficial`,
-      body: `FIM DE JOGO | ${score}${scorers ? `\n⚽ ${scorers}` : ""}\nRodada ${p.matchday} do Brasileirão.`,
+      body: `FIM DE JOGO | ${score}${scorers ? `\n⚽ ${scorers}` : ""}${defensive ? `\n🛡️ Defensivas: ${defensive}` : ""}${progressive ? `\n📈 Passes progressivos: ${progressive}` : ""}${dangerous ? `\n🎯 Chutes perigosos: ${dangerous}` : ""}`,
       comments: commentsFor(p, "clube"),
     },
     {
