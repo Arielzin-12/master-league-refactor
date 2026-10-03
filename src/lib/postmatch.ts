@@ -195,7 +195,6 @@ export async function applyPostMatch(p: PM) {
       + (p.motmId === c.id ? 1 : 0);
     const rating = Math.max(3, Math.min(10, currentRating));
     const totalRatingSum = Number(c.rating_sum ?? 0);
-    const previousRatingSum = Math.max(0, totalRatingSum - rating);
     const seasonAverage = totalAppearances > 0
       ? totalRatingSum / totalAppearances
       : rating;
