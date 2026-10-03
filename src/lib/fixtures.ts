@@ -68,6 +68,44 @@ export async function generateSeason(params: {
   const names = LEAGUE_CLUBS.map((c) => c.name);
   if (!names.includes(userClubName)) names[names.length - 1] = userClubName;
 
+  // Evita gerar o mesmo calendário mais de uma vez para a mesma carreira/temporada.
+  // A função pode ser chamada novamente ao entrar na tela/retomar a carreira.
+  const expectedFixtureCount = names.length * (names.length - 1);
+  const { data: existingFixtures, error: existingError } = await supabase
+    .from("fixtures")
+    .select("id, played")
+    .eq("career_id", careerId)
+    .eq("season", season);
+
+  if (existingError) throw existingError;
+
+  if ((existingFixtures?.length ?? 0) >= expectedFixtureCount) {
+    return { totalMatchdays: TOTAL_MATCHDAYS };
+  }
+
+  // Se ficou uma geração incompleta e nenhum jogo foi disputado, limpa o lote
+  // incompleto antes de recriar os 38 turnos. Isso evita jogos repetidos.
+  if ((existingFixtures?.length ?? 0) > 0) {
+    const hasPlayedMatch = existingFixtures?.some((fixture) => fixture.played);
+    if (hasPlayedMatch) {
+      throw new Error("O calendário desta temporada já começou e não pode ser regenerado.");
+    }
+
+    const { error: deleteFixturesError } = await supabase
+      .from("fixtures")
+      .delete()
+      .eq("career_id", careerId)
+      .eq("season", season);
+    if (deleteFixturesError) throw deleteFixturesError;
+
+    const { error: deleteStandingsError } = await supabase
+      .from("standings")
+      .delete()
+      .eq("career_id", careerId)
+      .eq("season", season);
+    if (deleteStandingsError) throw deleteStandingsError;
+  }
+
   const rounds = buildRounds(names);
 
   const fixtures = rounds.flatMap((round, idx) =>
