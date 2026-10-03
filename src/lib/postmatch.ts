@@ -307,7 +307,7 @@ async function createMatchSocial(p: PM) {
       body: p.result === "V"
         ? `${p.clubName} vence o ${p.opponent} e ganha fôlego na tabela. ${progressive ? `Na construção, ${progressive} apareceu com passes progressivos.` : "A equipe encontrou boas soluções para sair da pressão."}${dangerous ? ` ${dangerous} também levou perigo.` : ""}`
         : p.result === "E"
-          ? `Empate entre ${p.clubName} e ${p.opponent}. ${dangerous ? `Chutes perigosos de ${dangerous chamaram atenção.` : "Comissão técnica deve cobrar mais eficiência."}${defensive ? ` ${defensive} também tiveram ações defensivas importantes.` : ""}`
+          ? `Empate entre ${p.clubName} e ${p.opponent}. ${dangerous ? `Chutes perigosos de ${dangerous} chamaram atenção.` : "Comissão técnica deve cobrar mais eficiência."}${defensive ? ` ${defensive} também tiveram ações defensivas importantes.` : ""}`
           : `Derrota do ${p.clubName} para o ${p.opponent}. ${defensive ? `Apesar do resultado, ${defensive} tiveram destaque defensivo.` : "Pressão sobre o treinador aumenta."}${progressive ? ` ${progressive} tentou acelerar a construção.` : ""}`,
       comments: commentsFor(p, "jornalista"),
     },
