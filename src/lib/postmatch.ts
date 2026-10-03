@@ -174,7 +174,6 @@ export async function applyPostMatch(p: PM) {
     const totalMinutes = Math.max(0, Number(c.minutes ?? 0));
     const previousMinutes = Math.max(0, totalMinutes - minsPlayed);
     const totalAppearances = Math.max(0, Number(c.appearances ?? 0));
-    const previousAppearances = Math.max(0, totalAppearances - 1);
 
     let milestoneMinutes = 1200;
     if (age <= 20) milestoneMinutes = 450;
