@@ -35,7 +35,7 @@ function buildUser(req: NewsRequest) {
     lines.push(`- ${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`);
   }
   lines.push("");
-  lines.push("Retorne 1 manchete curta (até 90 caracteres, sem aspas) e 1 corpo de 2 a 4 parágrafos curtos. Pode usar **negrito** com markdown, mas evite listas longas. Não copie o título no corpo. Não use cabeçalhos como 'Título:' ou 'Corpo:'.");
+  lines.push("Retorne 1 manchete curta (até 90 caracteres, sem aspas) e 1 corpo de 2 a 4 parágrafos curtos. Pode usar **negrito** com markdown, mas evite listas longas. Não copie o título no corpo. Não use cabeçalhos como Título: ou Corpo:. Quando o contexto trouxer estatísticas de atuação defensiva, passes progressivos ou chutes perigosos, use esses dados de forma explícita e cite os jogadores envolvidos; nunca descarte esses campos. Varie o ângulo da matéria conforme o contexto: desempenho individual, tática, torcida, tabela, pressão, destaque positivo ou problema a corrigir. Evite começar notícias diferentes com a mesma estrutura.");
   return lines.join("\n");
 }
 
