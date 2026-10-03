@@ -343,35 +343,12 @@ export async function advanceCareerSeason(careerId: string, userId: string, club
   if (error) throw error;
 
   for (const p of players ?? []) {
+    // A evolução já foi aplicada ao fim de cada partida em applyPostMatch.
+    // Aqui apenas envelhecemos o jogador e zeramos as estatísticas da temporada.
     const age = (p.age ?? 0) + 1;
-    const overall = Number(p.overall ?? 0);
-    const potential = Math.max(overall, Number(p.potential ?? overall));
-    const appearances = Number(p.appearances ?? 0);
-    const minutes = Number(p.minutes ?? 0);
-    const ratingSum = Number(p.rating_sum ?? 0);
-    const averageRating = appearances > 0 ? ratingSum / appearances : 0;
-
-    // Mais minutos + boa média = maior chance de desenvolvimento.
-    const minutesFactor = Math.min(1, minutes / 2200);
-    const performanceBonus = averageRating >= 7.4 ? 1 : averageRating >= 6.8 ? 0.5 : averageRating > 0 && averageRating < 6.0 ? -1 : 0;
-
-    let delta = 0;
-    if (age <= 20) delta = 1 + (minutesFactor >= 0.65 ? 1 : 0) + (averageRating >= 7.2 ? 1 : 0);
-    else if (age <= 23) delta = 1 + (minutesFactor >= 0.7 ? 1 : 0) + (averageRating >= 7.3 ? 1 : 0);
-    else if (age <= 26) delta = (minutesFactor >= 0.65 && averageRating >= 7.0) ? 1 : 0;
-    else if (age <= 30) delta = performanceBonus >= 1 ? 1 : 0;
-    else if (age <= 34) delta = performanceBonus >= 1 ? 0 : -1;
-    else delta = -1 - (averageRating > 0 && averageRating < 6.2 ? 1 : 0);
-
-    // Potencial limita o crescimento dos jogadores em evolução.
-    const nextOverall = delta > 0
-      ? Math.min(potential, overall + delta)
-      : Math.max(1, overall + delta);
 
     await supabase.from("squad_players").update({
       age,
-      overall: nextOverall,
-      // Estatísticas de gols/cartões/minutos são da temporada e recomeçam zeradas.
       goals: 0,
       assists: 0,
       appearances: 0,
@@ -384,21 +361,17 @@ export async function advanceCareerSeason(careerId: string, userId: string, club
     }).eq("id", p.id);
   }
 
-  // Jogadores disponíveis no mercado também envelhecem para a nova temporada.
+  // Jogadores disponíveis no mercado apenas envelhecem na virada.
+  // Eles não recebem evolução automática, pois não participaram das partidas da carreira.
   const { data: marketPlayers } = await supabase
     .from("market_players")
-    .select("id, age, overall, potential")
+    .select("id, age")
     .eq("career_id", careerId);
 
   for (const p of marketPlayers ?? []) {
-    const age = (p.age ?? 0) + 1;
-    const overall = Number(p.overall ?? 0);
-    const potential = Math.max(overall, Number(p.potential ?? overall));
-    let delta = 0;
-    if (age <= 23) delta = potential > overall ? 1 : 0;
-    else if (age >= 36) delta = -1;
-    const nextOverall = delta > 0 ? Math.min(potential, overall + delta) : overall + delta;
-    await supabase.from("market_players").update({ age, overall: Math.max(1, nextOverall) }).eq("id", p.id);
+    await supabase.from("market_players")
+      .update({ age: (p.age ?? 0) + 1 })
+      .eq("id", p.id);
   }
 
   // Nova temporada: calendário e tabela zerados, mantendo o histórico da carreira.
