@@ -149,7 +149,106 @@ export async function applyPostMatch(p: PM) {
     });
   }
 
-  // 5) Finanças: folha salarial sai da reserva salarial, bônus entra no orçamento de transferências
+  // 5) Evolução individual: acontece imediatamente após cada partida.
+  // O progresso usa os minutos acumulados na temporada, desempenho e potencial.
+  // Não existe evolução automática na virada da temporada.
+  const { data: evolutionPlayers } = await supabase
+    .from("squad_players")
+    .select("id, name, age, overall, potential, position, appearances, minutes, motm, clean_sheets, rating_sum, goals, assists")
+    .eq("career_id", p.careerId)
+    .in("id", played);
+
+  const evolvedPlayers: Array<{ name: string; from: number; to: number }> = [];
+
+  for (const c of evolutionPlayers ?? []) {
+    const minsPlayed = minutes.get(c.id) ?? 0;
+    if (minsPlayed <= 0) continue;
+
+    const age = Number(c.age ?? 0);
+    const overall = Number(c.overall ?? 0);
+    const potential = Math.max(overall, Number(c.potential ?? overall));
+    if (age >= 30 || overall >= potential) continue;
+
+    const previousMinutes = Math.max(0, Number(c.minutes ?? 0));
+    const totalMinutes = previousMinutes + minsPlayed;
+    const previousAppearances = Math.max(0, Number(c.appearances ?? 0));
+    const totalAppearances = previousAppearances + 1;
+    const previousRatingSum = Number(c.rating_sum ?? 0);
+    const previousRating = previousAppearances > 0 ? previousRatingSum / previousAppearances : 0;
+
+    let milestoneMinutes = 1200;
+    if (age <= 20) milestoneMinutes = 450;
+    else if (age <= 23) milestoneMinutes = 600;
+    else if (age <= 26) milestoneMinutes = 900;
+
+    // Só gera +1 quando uma nova faixa de minutos é realmente atingida.
+    const milestonesBefore = Math.floor(previousMinutes / milestoneMinutes);
+    const milestonesAfter = Math.floor(totalMinutes / milestoneMinutes);
+    let delta = Math.max(0, milestonesAfter - milestonesBefore);
+
+    const currentRating = 6.0
+      + (p.result === "V" ? 0.5 : p.result === "D" ? -0.5 : 0)
+      + (p.goals[c.id] ?? 0) * 1
+      + (p.assists[c.id] ?? 0) * 0.5
+      - (p.red[c.id] ?? 0) * 1.5
+      - (p.yellow[c.id] ?? 0) * 0.3
+      + (p.motmId === c.id ? 1 : 0);
+    const rating = Math.max(3, Math.min(10, currentRating));
+    const seasonAverage = totalAppearances > 0
+      ? (previousRatingSum + rating) / totalAppearances
+      : rating;
+
+    // Atuações excepcionais podem acelerar um jovem, mas no máximo +1 extra por jogo.
+    if (rating >= 8.5 && minsPlayed >= 60 && seasonAverage >= 7.0 && age <= 23) delta += 1;
+
+    // 24–26 evoluem mais devagar; 27–29 só evoluem com desempenho consistente.
+    if (age >= 24 && age <= 26 && seasonAverage < 6.8) delta = 0;
+    if (age >= 27 && age <= 29 && (seasonAverage < 7.2 || totalMinutes < 900)) delta = 0;
+
+    // Nunca sobe além do potencial e evita saltos irreais em uma única partida.
+    delta = Math.min(delta, age <= 23 ? 2 : 1);
+    const nextOverall = Math.min(potential, overall + delta);
+
+    if (nextOverall <= overall) continue;
+
+    const attributeUpdates: Record<string, number> = {};
+    const attrs = ["attack", "defense", "physical", "technique"] as const;
+    const position = String(c.position ?? "").toUpperCase();
+    const priority =
+      /GOL|GK/.test(position) ? ["defense", "physical", "technique", "attack"] :
+      /ZAG|CB/.test(position) ? ["defense", "physical", "technique", "attack"] :
+      /LAT|LD|LE|LB|RB/.test(position) ? ["physical", "defense", "technique", "attack"] :
+      /VOL|MDF/.test(position) ? ["defense", "physical", "technique", "attack"] :
+      /MAT|MCT/.test(position) ? ["technique", "attack", "physical", "defense"] :
+      ["attack", "technique", "physical", "defense"];
+
+    // Reforça dois atributos ligados à posição, mantendo os demais intactos.
+    const actualDelta = nextOverall - overall;
+    for (let i = 0; i < actualDelta; i++) {
+      const attr = priority[i % priority.length]!;
+      const currentValue = Number(c[attr] ?? 0);
+      attributeUpdates[attr] = Math.min(99, currentValue + (attributeUpdates[attr] ?? 0) + 1);
+    }
+
+    const update: Record<string, number> = { overall: nextOverall, ...attributeUpdates };
+    await supabase.from("squad_players").update(update).eq("id", c.id);
+
+    evolvedPlayers.push({ name: c.name, from: overall, to: nextOverall });
+  }
+
+  if (evolvedPlayers.length > 0) {
+    for (const player of evolvedPlayers) {
+      await supabase.from("news_feed").insert({
+        career_id: p.careerId,
+        user_id: p.userId,
+        kind: "headline",
+        title: `📈 ${player.name} evolui após a partida`,
+        body: `${player.name} sobe de ${player.from} para ${player.to} de overall após o jogo contra o ${p.opponent}.`,
+      });
+    }
+  }
+
+  // 6) Finanças: folha salarial sai da reserva salarial, bônus entra no orçamento de transferências
   const tx = [
     { budget: "wages", category: "salarios", description: `Folha semanal — rodada ${p.matchday}`, amount_eur: -p.weeklyWages },
     { budget: "transfer", category: "bilheteria", description: `Receita de jogo vs ${p.opponent}`, amount_eur: p.home ? 1_200_000 : 0 },
