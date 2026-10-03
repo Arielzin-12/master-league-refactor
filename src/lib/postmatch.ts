@@ -154,7 +154,7 @@ export async function applyPostMatch(p: PM) {
   // Não existe evolução automática na virada da temporada.
   const { data: evolutionPlayers } = await supabase
     .from("squad_players")
-    .select("id, name, age, overall, potential, position, appearances, minutes, motm, clean_sheets, rating_sum, goals, assists")
+    .select("id, name, age, overall, potential, position, appearances, minutes, motm, clean_sheets, rating_sum, goals, assists, attack, defense, physical, technique")
     .eq("career_id", p.careerId)
     .in("id", played);
 
