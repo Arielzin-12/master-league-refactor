@@ -124,7 +124,8 @@ function clampPercentage(value: number) {
 }
 
 function buildDefaultPositions(ids: string[], formation: FormationId, players: SquadRow[]) {
-  const playerIndex = new Map(players.map((player, index) => [player.id, index]));
+  const playerIndex = new Map<string, number>();
+  players.forEach((player, index) => playerIndex.set(player.id, index));
   const sortedIds = [...ids].sort((a, b) => {
     const aPlayer = players.find((player) => player.id === a);
     const bPlayer = players.find((player) => player.id === b);
@@ -412,9 +413,7 @@ function EscalacaoPage() {
     const restoredStarters = Array.from(new Set(saved.starters.filter((id) => availableIds.has(id)))).slice(0, 11);
     const restoredStartersSet = new Set(restoredStarters);
     const restoredBench = Array.from(new Set(saved.bench.filter((id) => availableIds.has(id) && !restoredStartersSet.has(id)))).slice(0, 10);
-    const restoredFormation = saved.formation && FORMATION_OPTIONS.some((option) => option.value === saved.formation)
-      ? saved.formation
-      : "4-3-3";
+    const restoredFormation = FORMATION_OPTIONS.find((option) => option.value === saved.formation)?.value ?? "4-3-3";
 
     setFormation(restoredFormation);
     setStarters(restoredStartersSet);
