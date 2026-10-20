@@ -20,7 +20,7 @@ import { resolveMatchday } from "@/lib/fixtures";
 import { loadLineup, type SavedLineup } from "@/lib/lineup";
 import { POSITION_ORDER, normalizePosition } from "@/data/squads";
 import { toast } from "sonner";
-import { Trophy, ChevronRight, Goal, HandHelping, Square, Plus, Minus, ArrowRightLeft, Flame, ClipboardList, Trash2, Shield, ArrowUpRight, Target } from "lucide-react";
+import { Trophy, ChevronRight, Goal, HandHelping, Square, Plus, Minus, ArrowRightLeft, Flame, ClipboardList, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { victoryBonus, buildIncomingOffers } from "@/lib/players";
@@ -42,7 +42,7 @@ interface SquadRow {
   is_captain: boolean;
 }
 
-type StatKey = "goals" | "assists" | "yellow" | "red" | "defensive" | "progressive_pass" | "dangerous_shot";
+type StatKey = "goals" | "assists" | "yellow" | "red";
 
 type GoalDetail = { playerId: string; minute: number; description: string };
 
@@ -51,9 +51,6 @@ const STAT_META: Record<StatKey, { label: string; icon: typeof Goal; color: stri
   assists: { label: "Assistências", icon: HandHelping,  color: "text-sky-300",     bg: "bg-sky-500/15 border-sky-500/40" },
   yellow:  { label: "Amarelos",     icon: Square,       color: "text-yellow-300",  bg: "bg-yellow-500/15 border-yellow-500/40" },
   red:     { label: "Vermelhos",    icon: Square,       color: "text-red-400",     bg: "bg-red-500/15 border-red-500/40" },
-  defensive: { label: "Defensivas", icon: Shield, color: "text-cyan-300", bg: "bg-cyan-500/15 border-cyan-500/40" },
-  progressive_pass: { label: "Passe progressivo", icon: ArrowUpRight, color: "text-violet-300", bg: "bg-violet-500/15 border-violet-500/40" },
-  dangerous_shot: { label: "Chute perigoso", icon: Target, color: "text-orange-300", bg: "bg-orange-500/15 border-orange-500/40" },
 };
 
 export const Route = createFileRoute("/carreira/$careerId/jogo")({
@@ -136,7 +133,7 @@ function JogoPage() {
         if (d.subOutId) setSubOutId(d.subOutId);
         if (d.subInId) setSubInId(d.subInId);
         if (d.subMinute) setSubMinute(d.subMinute);
-        if (d.activeStat) setActiveStat(d.activeStat);
+        if (["goals", "assists", "yellow", "red"].includes(d.activeStat)) setActiveStat(d.activeStat);
         if (d.position !== undefined) setPosition(d.position);
         if (d.motmId) setMotmId(d.motmId);
         if (d.notes) setNotes(d.notes);
@@ -240,9 +237,9 @@ function JogoPage() {
   };
 
   const stateFor = (key: StatKey) =>
-    key === "goals" ? goals : key === "assists" ? assists : key === "yellow" ? yellow : key === "red" ? red : key === "defensive" ? defensive : key === "progressive_pass" ? progressivePass : dangerousShot;
+    key === "goals" ? goals : key === "assists" ? assists : key === "yellow" ? yellow : red;
   const setStateFor = (key: StatKey) =>
-    key === "goals" ? setGoals : key === "assists" ? setAssists : key === "yellow" ? setYellow : key === "red" ? setRed : key === "defensive" ? setDefensive : key === "progressive_pass" ? setProgressivePass : setDangerousShot;
+    key === "goals" ? setGoals : key === "assists" ? setAssists : key === "yellow" ? setYellow : setRed;
 
   const openGoalDialog = (playerId: string) => {
     setGoalPlayerId(playerId);
@@ -289,7 +286,6 @@ function JogoPage() {
       toast.error("Um jogador só pode receber 1 vermelho.");
       return;
     }
-    if ((key === "defensive" || key === "progressive_pass" || key === "dangerous_shot") && nextVal > 99) return;
     if (key === "yellow" && nextVal > 2) {
       toast.error("Máximo de 2 amarelos por jogador. O 2º amarelo já significa expulsão.");
       return;
@@ -821,60 +817,71 @@ function JogoPage() {
               <Badge variant="destructive" className="text-[10px]"><Flame className="mr-1 h-3 w-3" />{dName}</Badge>
             )}
           </div>
-          <div className="max-h-[480px] space-y-1 overflow-y-auto pr-1">
-            <p className="px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Em campo</p>
-            {ordered.filter((p) => onFieldIds.has(p.id)).map((p) => {
-              const camePerSub = liveSubs.some((s) => s.inId === p.id);
-              return (
-                <div
-                  key={p.id}
-                  className={`flex items-center gap-3 rounded-md border px-3 py-2 ${
-                    camePerSub ? "border-emerald-500/40 bg-emerald-500/10" : "border-primary/40 bg-primary/10"
-                  }`}
-                >
-                  <span className="w-10 rounded bg-muted px-1 py-0.5 text-center text-xs font-bold">{normalizePosition(p.position)}</span>
-                  <span className="flex-1 truncate">{p.name}</span>
-                  {camePerSub && <Badge variant="outline" className="text-[9px]">Entrou</Badge>}
-                  <span className="text-sm font-bold text-primary">{p.overall}</span>
-                </div>
-              );
-            })}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Formação tática</p>
+              <Badge variant="secondary">{lineup.formation ?? "4-3-3"}</Badge>
+            </div>
+            <div
+              className="relative mx-auto aspect-[3/4] w-full max-w-[430px] overflow-hidden rounded-xl border border-emerald-300/40 bg-emerald-800 shadow-inner"
+              style={{
+                backgroundImage: "repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0, rgba(255,255,255,.035) 11%, transparent 11%, transparent 22%)",
+              }}
+              aria-label={`Escalação tática ${lineup.formation ?? "4-3-3"}`}
+            >
+              <div className="pointer-events-none absolute inset-[3%] rounded-md border border-white/40" />
+              <div className="pointer-events-none absolute left-[3%] right-[3%] top-1/2 border-t border-white/40" />
+              <div className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40" />
+              <div className="pointer-events-none absolute left-[25%] right-[25%] top-[3%] h-[15%] border border-t-0 border-white/40" />
+              <div className="pointer-events-none absolute bottom-[3%] left-[25%] right-[25%] h-[15%] border border-b-0 border-white/40" />
+              {lineup.starters.map((id, index) => {
+                const player = players.find((item) => item.id === id);
+                if (!player) return null;
+                const fallbackPoints = [
+                  { x: 50, y: 88 },
+                  { x: 18, y: 70 }, { x: 39, y: 74 }, { x: 61, y: 74 }, { x: 82, y: 70 },
+                  { x: 27, y: 51 }, { x: 50, y: 56 }, { x: 73, y: 51 },
+                  { x: 18, y: 27 }, { x: 50, y: 22 }, { x: 82, y: 27 },
+                ];
+                const point = lineup.positions?.[id] ?? fallbackPoints[index] ?? { x: 50, y: 50 };
+                const onField = onFieldIds.has(id);
+                const entered = liveSubs.some((sub) => sub.inId === id);
+                return (
+                  <div
+                    key={id}
+                    className={`absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5 transition-opacity ${onField ? "opacity-100" : "opacity-35"}`}
+                    style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                    title={`${normalizePosition(player.position)} · OVR ${player.overall}${entered ? " · entrou" : ""}`}
+                  >
+                    <span className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-[10px] font-black shadow-md sm:h-10 sm:w-10 ${onField ? "border-amber-300 bg-slate-950 text-white" : "border-white/50 bg-slate-700 text-white/70"}`}>
+                      {normalizePosition(player.position)}
+                    </span>
+                    <span className="rounded bg-slate-950/85 px-1 py-0.5 text-[9px] font-black leading-none text-amber-200">{player.overall}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-center text-[10px] text-muted-foreground">
+              Os círculos mostram as posições dos titulares escolhidos. Os apagados já saíram durante a partida.
+            </p>
             {liveSubs.length > 0 && (
-              <>
-                <p className="mt-3 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Saíram do jogo</p>
-                {liveSubs.map((s, i) => {
-                  const out = players.find((p) => p.id === s.outId);
-                  if (!out) return null;
+              <div className="rounded-md border border-border/40 bg-background/20 p-2">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Substituições realizadas</p>
+                {liveSubs.map((sub, index) => {
+                  const out = players.find((item) => item.id === sub.outId);
+                  const incoming = players.find((item) => item.id === sub.inId);
                   return (
-                    <div key={`out-${i}`} className="flex items-center gap-3 rounded-md border border-border/40 bg-background/30 px-3 py-2 opacity-70">
-                      <span className="w-10 rounded bg-muted px-1 py-0.5 text-center text-xs font-bold">{normalizePosition(out.position)}</span>
-                      <span className="flex-1 truncate text-sm line-through">{out.name}</span>
-                      <span className="text-[10px] text-muted-foreground">saiu aos {s.minute}'</span>
-                    </div>
+                    <p key={index} className="text-xs text-muted-foreground">
+                      {sub.minute}' · {normalizePosition(out?.position ?? "?")} ↓ / {normalizePosition(incoming?.position ?? "?")} ↑
+                    </p>
                   );
                 })}
-              </>
+              </div>
             )}
             {lineup.bench.length > 0 && (
-              <>
-                <p className="mt-3 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Banco ({benchAvailable.length} disponíveis)
-                </p>
-                {ordered.filter((p) => lineup.bench.includes(p.id)).map((p) => {
-                  const used = liveSubs.some((s) => s.inId === p.id);
-                  return (
-                    <div
-                      key={p.id}
-                      className={`flex items-center gap-3 rounded-md border border-border/40 bg-background/30 px-3 py-2 ${used ? "opacity-50" : ""}`}
-                    >
-                      <span className="w-10 rounded bg-muted px-1 py-0.5 text-center text-xs font-bold">{normalizePosition(p.position)}</span>
-                      <span className="flex-1 truncate text-sm">{p.name}</span>
-                      {used && <Badge variant="outline" className="text-[9px]">Em campo</Badge>}
-                      <span className="text-sm font-bold text-muted-foreground">{p.overall}</span>
-                    </div>
-                  );
-                })}
-              </>
+              <p className="text-center text-[10px] text-muted-foreground">
+                Banco de reservas: {benchAvailable.length} disponível(is).
+              </p>
             )}
           </div>
         </CardContent>
@@ -1074,11 +1081,6 @@ function JogoPage() {
           <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
             <div className="font-semibold">🧤 Clean sheet</div>
             <p className="mt-1 text-xs text-muted-foreground">{ga === 0 ? "Sim — o time não sofreu gols. Goleiros e defensores elegíveis terão o clean sheet contabilizado automaticamente." : "Não — o adversário marcou pelo menos um gol."}</p>
-          </div>
-
-          <div className="space-y-2 rounded-md border border-border/40 bg-background/20 p-3">
-            <Label>🛡️ Atuação defensiva</Label>
-            <p className="text-[10px] text-muted-foreground">Registre as ações defensivas diretamente nos jogadores acima. Cada clique adiciona +1, no mesmo padrão de gols, assistências e cartões.</p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
